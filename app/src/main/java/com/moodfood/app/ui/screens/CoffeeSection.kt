@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.moodfood.app.ui.theme.BlushPink
+import com.moodfood.app.ui.theme.CreamText
 import com.moodfood.app.ui.theme.SectionCoffee
 import com.moodfood.app.ui.theme.TealBackgroundDeep
 import com.moodfood.app.ui.theme.CoralAccent
@@ -98,7 +99,11 @@ fun CoffeeSection() {
                         HalfScale {
                             TimePicker(
                                 state = timeState,
-                                colors = TimePickerDefaults.colors(clockDialColor = TealBackgroundDeep),
+                                colors = TimePickerDefaults.colors(
+                                    clockDialColor = TealBackgroundDeep,
+                                    clockDialSelectedContentColor = CreamText,
+                                    clockDialUnselectedContentColor = CreamText,
+                                ),
                             )
                         }
                         Row(

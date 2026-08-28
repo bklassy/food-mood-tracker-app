@@ -111,7 +111,11 @@ fun BowelMovementSection() {
                         HalfScale {
                             TimePicker(
                                 state = timeState,
-                                colors = TimePickerDefaults.colors(clockDialColor = TealBackgroundDeep),
+                                colors = TimePickerDefaults.colors(
+                                    clockDialColor = TealBackgroundDeep,
+                                    clockDialSelectedContentColor = CreamText,
+                                    clockDialUnselectedContentColor = CreamText,
+                                ),
                             )
                         }
                         BristolTypeSelector(selected = draftBristolType, onSelect = { draftBristolType = it })
