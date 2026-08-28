@@ -192,10 +192,10 @@ private fun TimeSlotBlock(slot: TimeSlot) {
     val today = remember { todayKey() }
     val coroutineScope = rememberCoroutineScope()
     var noteText by rememberSaveable { mutableStateOf("") }
-    var hunger by rememberSaveable { mutableStateOf(3) }
-    var fullness by rememberSaveable { mutableStateOf(2) }
-    var energy by rememberSaveable { mutableStateOf(3) }
-    var nervousSystem by rememberSaveable { mutableStateOf(2) }
+    var hunger by rememberSaveable { mutableStateOf<Int?>(null) }
+    var fullness by rememberSaveable { mutableStateOf<Int?>(null) }
+    var energy by rememberSaveable { mutableStateOf<Int?>(null) }
+    var nervousSystem by rememberSaveable { mutableStateOf<Int?>(null) }
     var expanded by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -207,7 +207,7 @@ private fun TimeSlotBlock(slot: TimeSlot) {
         noteText = loaded.foodNote
     }
 
-    fun persist(newHunger: Int, newFullness: Int, newEnergy: Int, newNervousSystem: Int, newNote: String) {
+    fun persist(newHunger: Int?, newFullness: Int?, newEnergy: Int?, newNervousSystem: Int?, newNote: String) {
         coroutineScope.launch {
             Repository.saveDaySlot(today, slot.name, newHunger, newFullness, newEnergy, newNervousSystem, newNote)
         }

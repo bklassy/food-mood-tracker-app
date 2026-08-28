@@ -5,7 +5,7 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 data class JournalEntryData(val journalText: String, val gratitudeText: String)
-data class DaySlotData(val hunger: Int, val fullness: Int, val energy: Int, val nervousSystem: Int, val foodNote: String)
+data class DaySlotData(val hunger: Int?, val fullness: Int?, val energy: Int?, val nervousSystem: Int?, val foodNote: String)
 data class AlcoholData(val drinkCount: Int, val note: String)
 data class CoffeeEntryData(val id: String, val time: String, val shotCount: Int, val note: String)
 data class BowelMovementData(val id: String, val time: String, val bristolType: Int, val note: String)
@@ -15,7 +15,7 @@ data class SymptomEntryData(val id: String, val name: String, val note: String)
 data class CycleSettingsData(val avgCycleLength: Int, val avgPeriodLength: Int, val lastPeriodStartEpochDay: Long?)
 
 private val defaultJournalEntry = JournalEntryData("", "")
-private val defaultDaySlot = DaySlotData(hunger = 3, fullness = 2, energy = 3, nervousSystem = 2, foodNote = "")
+private val defaultDaySlot = DaySlotData(hunger = null, fullness = null, energy = null, nervousSystem = null, foodNote = "")
 private val defaultAlcohol = AlcoholData(0, "")
 private val defaultMovement = MovementData("", null, "")
 private val defaultSocial = SocialData("", null)
@@ -58,10 +58,10 @@ object Repository {
             ).use { rows ->
                 rows.map { row ->
                     DaySlotData(
-                        hunger = (row[0] as Long).toInt(),
-                        fullness = (row[1] as Long).toInt(),
-                        energy = (row[2] as Long).toInt(),
-                        nervousSystem = (row[3] as Long).toInt(),
+                        hunger = (row[0] as Long?)?.toInt(),
+                        fullness = (row[1] as Long?)?.toInt(),
+                        energy = (row[2] as Long?)?.toInt(),
+                        nervousSystem = (row[3] as Long?)?.toInt(),
                         foodNote = row[4] as String,
                     )
                 }
@@ -72,10 +72,10 @@ object Repository {
     suspend fun saveDaySlot(
         date: String,
         slot: String,
-        hunger: Int,
-        fullness: Int,
-        energy: Int,
-        nervousSystem: Int,
+        hunger: Int?,
+        fullness: Int?,
+        energy: Int?,
+        nervousSystem: Int?,
         foodNote: String,
     ) = withContext(Dispatchers.IO) {
         db.connect().use { conn ->
