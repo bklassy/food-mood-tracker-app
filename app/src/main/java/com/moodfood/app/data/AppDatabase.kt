@@ -140,4 +140,16 @@ private val SCHEMA_STATEMENTS = listOf(
         last_period_start_epoch_day INTEGER
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS favorite_foods (
+        id INTEGER PRIMARY KEY CHECK (id = 0),
+        content TEXT NOT NULL DEFAULT ''
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS mental_health_tools (
+        id INTEGER PRIMARY KEY CHECK (id = 0),
+        content TEXT NOT NULL DEFAULT ''
+    )
+    """,
 )

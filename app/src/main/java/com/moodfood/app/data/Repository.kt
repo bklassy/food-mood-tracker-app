@@ -248,4 +248,44 @@ object Repository {
             )
         }
     }
+
+    suspend fun loadFavoriteFoods(): String = withContext(Dispatchers.IO) {
+        db.connect().use { conn ->
+            conn.query("SELECT content FROM favorite_foods WHERE id = 0").use { rows ->
+                rows.map { row -> row[0] as String }
+            }.firstOrNull() ?: ""
+        }
+    }
+
+    suspend fun saveFavoriteFoods(content: String) = withContext(Dispatchers.IO) {
+        db.connect().use { conn ->
+            conn.execute(
+                """
+                INSERT INTO favorite_foods (id, content) VALUES (0, ?)
+                ON CONFLICT(id) DO UPDATE SET content = excluded.content
+                """,
+                content,
+            )
+        }
+    }
+
+    suspend fun loadMentalHealthTools(): String = withContext(Dispatchers.IO) {
+        db.connect().use { conn ->
+            conn.query("SELECT content FROM mental_health_tools WHERE id = 0").use { rows ->
+                rows.map { row -> row[0] as String }
+            }.firstOrNull() ?: ""
+        }
+    }
+
+    suspend fun saveMentalHealthTools(content: String) = withContext(Dispatchers.IO) {
+        db.connect().use { conn ->
+            conn.execute(
+                """
+                INSERT INTO mental_health_tools (id, content) VALUES (0, ?)
+                ON CONFLICT(id) DO UPDATE SET content = excluded.content
+                """,
+                content,
+            )
+        }
+    }
 }
