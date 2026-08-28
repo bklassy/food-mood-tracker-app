@@ -24,3 +24,13 @@ val PhaseMenstrual = Color(0xFFC96B68)
 val PhaseFollicular = CoralAccent
 val PhaseOvulation = Color(0xFFE8A94A)
 val PhaseLuteal = Color(0xFF9B7FBD)
+
+// Time-of-day accents for the Journal screen's slot pills, progressing
+// through a day's light: pre-dawn indigo -> morning yellow -> midday blue ->
+// afternoon amber -> sunset rose -> night navy.
+val TimeTwilight = Color(0xFF5B6EAE)
+val TimeMorning = Color(0xFFF2C94C)
+val TimeNoon = Color(0xFF4FB0DB)
+val TimeAfternoon = Color(0xFFE8974A)
+val TimeEvening = Color(0xFFD9634F)
+val TimeLateEvening = Color(0xFF3B3763)

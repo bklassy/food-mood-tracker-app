@@ -28,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontStyle
@@ -36,17 +37,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.moodfood.app.ui.theme.BlushPink
 import com.moodfood.app.ui.theme.CoralAccent
-import com.moodfood.app.ui.theme.SlatePlaceholder
+import com.moodfood.app.ui.theme.CreamText
 import com.moodfood.app.ui.theme.SlateText
+import com.moodfood.app.ui.theme.SlatePlaceholder
+import com.moodfood.app.ui.theme.TimeAfternoon
+import com.moodfood.app.ui.theme.TimeEvening
+import com.moodfood.app.ui.theme.TimeLateEvening
+import com.moodfood.app.ui.theme.TimeMorning
+import com.moodfood.app.ui.theme.TimeNoon
+import com.moodfood.app.ui.theme.TimeTwilight
 
-/** Time slots a day's food/energy/nervous-system readings are logged against. */
-private enum class TimeSlot(val label: String, val placeholder: String) {
-    Twilight("Twilight", "Any insomnia meals or snacks?"),
-    Morning("Morning", "Nourishing start to the day"),
-    Noon("Noon", "Lunchtime"),
-    Afternoon("Afternoon", "Lite bites to hold over until dinner"),
-    Evening("Evening", "Candlelight dinner with a roast"),
-    LateEvening("Late Evening", "What's for pud?"),
+/**
+ * Time slots a day's food/energy/nervous-system readings are logged against.
+ * Each carries a time-of-day pill color so the six blocks read apart from
+ * each other while scrolling, rather than blurring into one long list.
+ */
+private enum class TimeSlot(
+    val label: String,
+    val placeholder: String,
+    val pillColor: Color,
+    val pillTextColor: Color,
+) {
+    Twilight("Twilight", "Any insomnia meals or snacks?", TimeTwilight, CreamText),
+    Morning("Morning", "Nourishing start to the day", TimeMorning, SlateText),
+    Noon("Noon", "Lunchtime", TimeNoon, CreamText),
+    Afternoon("Afternoon", "Lite bites to hold over until dinner", TimeAfternoon, SlateText),
+    Evening("Evening", "Candlelight dinner with a roast", TimeEvening, CreamText),
+    LateEvening("Late Evening", "What's for pud?", TimeLateEvening, CreamText),
 }
 
 private val NoteFieldLineHeight = 22.sp
@@ -122,7 +139,10 @@ private fun TimeSlotBlock(slot: TimeSlot) {
         Text(
             text = slot.label,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = slot.pillTextColor,
+            modifier = Modifier
+                .background(slot.pillColor, RoundedCornerShape(12.dp))
+                .padding(horizontal = 14.dp, vertical = 6.dp),
         )
         EnergySlider(value = energy, onValueChange = { energy = it })
         NervousSystemSlider(value = nervousSystem, onValueChange = { nervousSystem = it })
