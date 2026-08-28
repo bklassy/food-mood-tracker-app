@@ -5,7 +5,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -40,17 +42,15 @@ fun RootPager() {
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Background + scrim deliberately ignore system bar insets, so the
+        // image runs edge-to-edge behind the status bar and gesture nav area
+        // instead of stopping at a flat painted strip there.
         Image(
             painter = painterResource(R.drawable.background_image),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
-        // The background is fixed while content scrolls over it, so any given
-        // piece of text passes over both the image's darkest and palest
-        // regions depending on scroll position - this scrim keeps text
-        // readable everywhere rather than only where the image happens to be
-        // dark.
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -59,12 +59,15 @@ fun RootPager() {
 
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding(),
         ) { pageIndex ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 16.dp),
+                    .padding(top = 8.dp),
                 contentAlignment = Alignment.TopCenter,
             ) {
                 when (pages[pageIndex]) {
