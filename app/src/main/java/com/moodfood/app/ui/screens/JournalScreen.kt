@@ -81,6 +81,7 @@ private const val NoteFieldMaxLines = 8
 @Composable
 fun JournalScreen() {
     var journalText by rememberSaveable { mutableStateOf("") }
+    var gratitudeText by rememberSaveable { mutableStateOf("") }
 
     LazyColumn(
         modifier = Modifier
@@ -112,6 +113,22 @@ fun JournalScreen() {
             )
         }
 
+        item {
+            Text(
+                text = "Gratitude",
+                style = MaterialTheme.typography.titleMedium,
+                color = CoralAccent,
+            )
+        }
+
+        item {
+            PinkNoteField(
+                value = gratitudeText,
+                onValueChange = { gratitudeText = it },
+                placeholder = "One thing that went well today...",
+            )
+        }
+
         item { CycleBadge() }
 
         item {
@@ -133,6 +150,10 @@ fun JournalScreen() {
         item { BowelMovementSection() }
 
         item { MovementBlock() }
+
+        item { SocialBlock() }
+
+        item { SymptomsBlock() }
 
         item { Spacer(modifier = Modifier.height(48.dp)) }
     }

@@ -17,14 +17,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 /**
- * Mindful movement, intuitive-eating style: what you did and how it felt -
- * deliberately no duration, step count, or calories burned. One entry per
- * day, collapsible like Alcohol. In-memory only for now.
+ * Social connection: who/what, and how it felt - not a contact log, just a
+ * lightweight check-in on connection. Collapsible like Movement/Alcohol.
+ * In-memory only for now.
  */
 @Composable
-fun MovementBlock() {
+fun SocialBlock() {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    var movementType by rememberSaveable { mutableStateOf("") }
     var note by rememberSaveable { mutableStateOf("") }
     var feeling by rememberSaveable { mutableStateOf<FeelingTag?>(null) }
 
@@ -33,7 +32,7 @@ fun MovementBlock() {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = "🌿 Movement  ${if (expanded) "▾" else "▸"}",
+            text = "🫂 Social  ${if (expanded) "▾" else "▸"}",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier
@@ -43,16 +42,11 @@ fun MovementBlock() {
         AnimatedVisibility(visible = expanded) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 PinkNoteField(
-                    value = movementType,
-                    onValueChange = { movementType = it },
-                    placeholder = "Any movement today? Walk, yoga, dancing, gardening...",
-                )
-                FeelingTagSelector(selected = feeling, onSelect = { feeling = it })
-                PinkNoteField(
                     value = note,
                     onValueChange = { note = it },
-                    placeholder = "How did it feel?",
+                    placeholder = "Did you connect with anyone today?",
                 )
+                FeelingTagSelector(selected = feeling, onSelect = { feeling = it })
             }
         }
     }
