@@ -32,6 +32,42 @@ fun EnergySlider(value: Int, onValueChange: (Int) -> Unit, modifier: Modifier = 
 }
 
 @Composable
+fun HungerSlider(value: Int, onValueChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+    LabeledSlider(
+        label = "Hunger (before)",
+        value = value,
+        valueLabel = hungerLabel(value),
+        onValueChange = onValueChange,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun FullnessSlider(value: Int, onValueChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+    LabeledSlider(
+        label = "Fullness (after)",
+        value = value,
+        valueLabel = fullnessLabel(value),
+        onValueChange = onValueChange,
+        modifier = modifier,
+    )
+}
+
+/** Body-cue label for the current Hunger reading, intuitive-eating style. */
+private fun hungerLabel(value: Int): String = when (value) {
+    0, 1 -> "Starving"
+    2, 3 -> "Comfortably hungry"
+    else -> "Not hungry"
+}
+
+/** Body-cue label for the current Fullness reading. */
+private fun fullnessLabel(value: Int): String = when (value) {
+    0, 1 -> "Still hungry"
+    2, 3 -> "Satisfied"
+    else -> "Uncomfortably full"
+}
+
+@Composable
 fun NervousSystemSlider(value: Int, onValueChange: (Int) -> Unit, modifier: Modifier = Modifier) {
     LabeledSlider(
         label = "Nervous System",

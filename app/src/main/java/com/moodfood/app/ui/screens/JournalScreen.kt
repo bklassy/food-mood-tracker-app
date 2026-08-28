@@ -60,12 +60,12 @@ private enum class TimeSlot(
     val pillColor: Color,
     val pillTextColor: Color,
 ) {
-    Twilight("Twilight", "Any insomnia meals or snacks?", TimeTwilight, CreamText),
-    Morning("Morning", "Nourishing start to the day", TimeMorning, SlateText),
-    Noon("Noon", "Lunchtime", TimeNoon, SlateText),
-    Afternoon("Afternoon", "Lite bites to hold over until dinner", TimeAfternoon, SlateText),
-    Evening("Evening", "Candlelight dinner with a roast", TimeEvening, CreamText),
-    LateEvening("Late Evening", "What's for pud?", TimeLateEvening, CreamText),
+    Twilight("Twilight", "Any insomnia meals or snacks? Did they feel satisfying?", TimeTwilight, CreamText),
+    Morning("Morning", "What sounded good this morning? How satisfying was it?", TimeMorning, SlateText),
+    Noon("Noon", "What was lunch like — satisfying, rushed, something else?", TimeNoon, SlateText),
+    Afternoon("Afternoon", "Any afternoon bites? Were they what you wanted?", TimeAfternoon, SlateText),
+    Evening("Evening", "What was dinner like? Did it hit the spot?", TimeEvening, CreamText),
+    LateEvening("Late Evening", "Anything after dinner? How did it feel?", TimeLateEvening, CreamText),
 }
 
 private val NoteFieldLineHeight = 22.sp
@@ -130,12 +130,16 @@ fun JournalScreen() {
         item { AlcoholBlock() }
 
         item { BowelMovementSection() }
+
+        item { MovementBlock() }
     }
 }
 
 @Composable
 private fun TimeSlotBlock(slot: TimeSlot) {
     var noteText by rememberSaveable { mutableStateOf("") }
+    var hunger by rememberSaveable { mutableStateOf(3) }
+    var fullness by rememberSaveable { mutableStateOf(2) }
     var energy by rememberSaveable { mutableStateOf(3) }
     var nervousSystem by rememberSaveable { mutableStateOf(2) }
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -153,6 +157,8 @@ private fun TimeSlotBlock(slot: TimeSlot) {
         )
         AnimatedVisibility(visible = expanded) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                HungerSlider(value = hunger, onValueChange = { hunger = it })
+                FullnessSlider(value = fullness, onValueChange = { fullness = it })
                 EnergySlider(value = energy, onValueChange = { energy = it })
                 NervousSystemSlider(value = nervousSystem, onValueChange = { nervousSystem = it })
                 PinkNoteField(
