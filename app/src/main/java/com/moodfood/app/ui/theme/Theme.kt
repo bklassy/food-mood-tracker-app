@@ -14,7 +14,7 @@ private val MoodFoodColorScheme = darkColorScheme(
     surface = BlushPink,
     onSurface = SlateText,
     surfaceVariant = SlotPill,
-    onSurfaceVariant = CreamText,
+    onSurfaceVariant = SlateText,
 )
 
 /**

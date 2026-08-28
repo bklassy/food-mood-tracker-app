@@ -83,7 +83,7 @@ fun CoffeeSection() {
                         modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        TimePicker(state = timeState)
+                        HalfScale { TimePicker(state = timeState) }
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),

@@ -95,7 +95,7 @@ fun BowelMovementSection() {
                         modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        TimePicker(state = timeState)
+                        HalfScale { TimePicker(state = timeState) }
                         BristolTypeSelector(selected = draftBristolType, onSelect = { draftBristolType = it })
                         PinkNoteField(
                             value = draftNote,
