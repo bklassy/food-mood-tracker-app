@@ -28,10 +28,12 @@ import kotlinx.coroutines.launch
 fun MentalHealthToolsScreen() {
     val coroutineScope = rememberCoroutineScope()
     var content by remember { mutableStateOf(TextFieldValue("")) }
+    var isLoaded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val loaded = Repository.loadMentalHealthTools()
         content = TextFieldValue(loaded, TextRange(loaded.length))
+        isLoaded = true
     }
 
     Column(
@@ -46,13 +48,20 @@ fun MentalHealthToolsScreen() {
             style = MaterialTheme.typography.titleLarge,
             color = CoralAccent,
         )
-        BulletedNoteField(
-            value = content,
-            onValueChange = {
-                content = it
-                coroutineScope.launch { Repository.saveMentalHealthTools(it.text) }
-            },
-            placeholder = "A running list of grounding tools, coping skills, reminders...",
-        )
+        // Wait for the load before rendering the real field: swapping its
+        // TextFieldValue out from under an already-focused BasicTextField
+        // (which happens if you tap in before the async load finishes)
+        // confuses the IME session badly enough that it needs a second tap
+        // to work again.
+        if (isLoaded) {
+            BulletedNoteField(
+                value = content,
+                onValueChange = {
+                    content = it
+                    coroutineScope.launch { Repository.saveMentalHealthTools(it.text) }
+                },
+                placeholder = "A running list of grounding tools, coping skills, reminders...",
+            )
+        }
     }
 }
