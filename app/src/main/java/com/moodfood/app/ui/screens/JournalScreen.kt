@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -132,6 +133,8 @@ fun JournalScreen() {
         item { BowelMovementSection() }
 
         item { MovementBlock() }
+
+        item { Spacer(modifier = Modifier.height(48.dp)) }
     }
 }
 
@@ -144,7 +147,10 @@ private fun TimeSlotBlock(slot: TimeSlot) {
     var nervousSystem by rememberSaveable { mutableStateOf(2) }
     var expanded by rememberSaveable { mutableStateOf(false) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         Text(
             text = "${slot.label}  ${if (expanded) "▾" else "▸"}",
             style = MaterialTheme.typography.titleMedium,
@@ -158,14 +164,14 @@ private fun TimeSlotBlock(slot: TimeSlot) {
         AnimatedVisibility(visible = expanded) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 HungerSlider(value = hunger, onValueChange = { hunger = it })
-                FullnessSlider(value = fullness, onValueChange = { fullness = it })
-                EnergySlider(value = energy, onValueChange = { energy = it })
-                NervousSystemSlider(value = nervousSystem, onValueChange = { nervousSystem = it })
                 PinkNoteField(
                     value = noteText,
                     onValueChange = { noteText = it },
                     placeholder = slot.placeholder,
                 )
+                FullnessSlider(value = fullness, onValueChange = { fullness = it })
+                EnergySlider(value = energy, onValueChange = { energy = it })
+                NervousSystemSlider(value = nervousSystem, onValueChange = { nervousSystem = it })
             }
         }
     }

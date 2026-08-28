@@ -15,6 +15,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -95,7 +96,12 @@ fun BowelMovementSection() {
                         modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        HalfScale { TimePicker(state = timeState) }
+                        HalfScale {
+                            TimePicker(
+                                state = timeState,
+                                colors = TimePickerDefaults.colors(clockDialColor = BlushPink),
+                            )
+                        }
                         BristolTypeSelector(selected = draftBristolType, onSelect = { draftBristolType = it })
                         PinkNoteField(
                             value = draftNote,

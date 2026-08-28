@@ -53,11 +53,15 @@ fun FullnessSlider(value: Int, onValueChange: (Int) -> Unit, modifier: Modifier 
     )
 }
 
-/** Body-cue label for the current Hunger reading, intuitive-eating style. */
+/**
+ * Body-cue label for the current Hunger reading, intuitive-eating style.
+ * Low value (left) = not hungry, high value (right) = starving - increasing
+ * intensity left-to-right, matching [fullnessLabel]'s direction.
+ */
 private fun hungerLabel(value: Int): String = when (value) {
-    0, 1 -> "Starving"
+    0, 1 -> "Not hungry"
     2, 3 -> "Comfortably hungry"
-    else -> "Not hungry"
+    else -> "Starving"
 }
 
 /** Body-cue label for the current Fullness reading. */
