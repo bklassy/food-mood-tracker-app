@@ -12,8 +12,8 @@ import androidx.compose.ui.graphics.Color
 val TealBackground = Color(0xFF0A1B2E) // lifted slightly off the image's darkest sampled pixel
 val TealBackgroundDeep = Color(0xFF030D20) // the image's actual darkest sampled pixel
 
-val BlushPink = Color(0xFFF3EFE3)
-val BlushPinkDim = Color(0xFFE8DFC8)
+val BlushPink = Color(0xFFEDE0C0)
+val BlushPinkDim = Color(0xFFE0D0A0)
 
 val CoralAccent = Color(0xFFF0B24C) // lantern glow gold, sampled from the brightest warm pixels
 val CoralAccentDeep = Color(0xFFCC8F3A) // deeper amber, sampled lantern-body tone

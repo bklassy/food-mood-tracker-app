@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -306,6 +307,7 @@ fun PinkNoteField(
                 onValueChange = onValueChange,
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
                     color = SlateText,
+                    fontWeight = FontWeight.Medium,
                     lineHeight = NoteFieldLineHeight,
                 ),
                 cursorBrush = SolidColor(SlateText),

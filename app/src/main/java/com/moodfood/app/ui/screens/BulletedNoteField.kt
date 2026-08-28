@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.moodfood.app.ui.theme.BlushPink
@@ -73,7 +74,7 @@ fun BulletedNoteField(
             BasicTextField(
                 value = value,
                 onValueChange = ::handleChange,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = SlateText),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = SlateText, fontWeight = FontWeight.Medium),
                 cursorBrush = SolidColor(SlateText),
                 modifier = Modifier.fillMaxWidth(),
             )
