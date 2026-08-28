@@ -20,14 +20,17 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.moodfood.app.data.Repository
 import com.moodfood.app.ui.theme.BlushPink
 import com.moodfood.app.ui.theme.CreamText
 import com.moodfood.app.ui.theme.SectionPoo
@@ -35,11 +38,12 @@ import com.moodfood.app.ui.theme.TealBackgroundDeep
 import com.moodfood.app.ui.theme.CoralAccent
 import com.moodfood.app.ui.theme.SlatePlaceholder
 import com.moodfood.app.ui.theme.SlateText
+import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 private data class BowelMovementEntry(
-    val id: Long,
+    val id: String,
     val time: LocalTime,
     val bristolType: Int,
     val note: String,
@@ -63,18 +67,25 @@ private val timeFormatter = DateTimeFormatter.ofPattern("h:mm a")
  * tap the header to reveal the log list plus an inline add-entry card (no
  * popup dialog, but the Material3 TimePicker embedded directly in the card -
  * the custom swipe-to-change control it replaced wasn't reliable enough).
- * In-memory only for now.
+ * Persisted to the local Turso/libSQL database, scoped to today's date.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BowelMovementSection() {
+    val today = remember { todayKey() }
+    val coroutineScope = rememberCoroutineScope()
     var expanded by rememberSaveable { mutableStateOf(false) }
-    val entries = remember { mutableStateOf(listOf<BowelMovementEntry>()) }
-    var nextId by remember { mutableStateOf(0L) }
+    var entries by remember { mutableStateOf(listOf<BowelMovementEntry>()) }
 
     val timeState = rememberTimePickerState(initialHour = 11, initialMinute = 0, is24Hour = false)
     var draftBristolType by remember { mutableStateOf(4) }
     var draftNote by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        entries = Repository.loadBowelMovements(today).map {
+            BowelMovementEntry(it.id, LocalTime.parse(it.time), it.bristolType, it.note)
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -93,10 +104,13 @@ fun BowelMovementSection() {
 
         AnimatedVisibility(visible = expanded) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                entries.value.sortedByDescending { it.time }.forEach { entry ->
+                entries.sortedByDescending { it.time }.forEach { entry ->
                     BowelMovementRow(
                         entry = entry,
-                        onDelete = { entries.value = entries.value.filter { it.id != entry.id } },
+                        onDelete = {
+                            entries = entries.filter { it.id != entry.id }
+                            coroutineScope.launch { Repository.deleteBowelMovement(entry.id) }
+                        },
                     )
                 }
 
@@ -130,8 +144,12 @@ fun BowelMovementSection() {
                             color = CoralAccent,
                             modifier = Modifier.clickable {
                                 val time = LocalTime.of(timeState.hour, timeState.minute)
-                                entries.value = entries.value + BowelMovementEntry(nextId, time, draftBristolType, draftNote)
-                                nextId++
+                                val bristolType = draftBristolType
+                                val note = draftNote
+                                coroutineScope.launch {
+                                    val id = Repository.addBowelMovement(today, time.toString(), bristolType, note)
+                                    entries = entries + BowelMovementEntry(id, time, bristolType, note)
+                                }
                                 draftNote = ""
                             },
                         )

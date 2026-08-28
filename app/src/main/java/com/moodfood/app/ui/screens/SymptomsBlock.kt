@@ -14,37 +14,46 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.moodfood.app.data.Repository
 import com.moodfood.app.ui.theme.BlushPink
 import com.moodfood.app.ui.theme.CoralAccent
 import com.moodfood.app.ui.theme.CreamText
 import com.moodfood.app.ui.theme.SectionSymptoms
 import com.moodfood.app.ui.theme.SlatePlaceholder
 import com.moodfood.app.ui.theme.SlateText
+import kotlinx.coroutines.launch
 
-private data class SymptomEntry(val id: Long, val name: String, val note: String)
+private data class SymptomEntry(val id: String, val name: String, val note: String)
 
 /**
  * Free-tag physical symptom log (headaches, cramps, skin, fatigue, etc.) -
  * a name plus an optional note per entry, no severity scale. Useful for
  * eyeballing against cycle phase later. Collapsible like Coffee/Alcohol.
- * In-memory only for now.
+ * Persisted to the local Turso/libSQL database, scoped to today's date.
  */
 @Composable
 fun SymptomsBlock() {
+    val today = remember { todayKey() }
+    val coroutineScope = rememberCoroutineScope()
     var expanded by rememberSaveable { mutableStateOf(false) }
-    val entries = remember { mutableStateOf(listOf<SymptomEntry>()) }
-    var nextId by remember { mutableStateOf(0L) }
+    var entries by remember { mutableStateOf(listOf<SymptomEntry>()) }
 
     var draftName by remember { mutableStateOf("") }
     var draftNote by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        entries = Repository.loadSymptoms(today).map { SymptomEntry(it.id, it.name, it.note) }
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -62,10 +71,13 @@ fun SymptomsBlock() {
         )
         AnimatedVisibility(visible = expanded) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                entries.value.forEach { entry ->
+                entries.forEach { entry ->
                     SymptomRow(
                         entry = entry,
-                        onDelete = { entries.value = entries.value.filter { it.id != entry.id } },
+                        onDelete = {
+                            entries = entries.filter { it.id != entry.id }
+                            coroutineScope.launch { Repository.deleteSymptom(entry.id) }
+                        },
                     )
                 }
 
@@ -85,8 +97,12 @@ fun SymptomsBlock() {
                     color = CoralAccent,
                     modifier = Modifier.clickable {
                         if (draftName.isNotBlank()) {
-                            entries.value = entries.value + SymptomEntry(nextId, draftName, draftNote)
-                            nextId++
+                            val name = draftName
+                            val note = draftNote
+                            coroutineScope.launch {
+                                val id = Repository.addSymptom(today, name, note)
+                                entries = entries + SymptomEntry(id, name, note)
+                            }
                             draftName = ""
                             draftNote = ""
                         }

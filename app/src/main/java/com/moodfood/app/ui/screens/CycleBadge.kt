@@ -19,9 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -29,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.moodfood.app.data.Repository
 import com.moodfood.app.ui.theme.CoralAccent
 import com.moodfood.app.ui.theme.CreamText
 import com.moodfood.app.ui.theme.PhaseFollicular
@@ -36,6 +39,7 @@ import com.moodfood.app.ui.theme.PhaseLuteal
 import com.moodfood.app.ui.theme.PhaseMenstrual
 import com.moodfood.app.ui.theme.PhaseOvulation
 import com.moodfood.app.ui.theme.SlateText
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -62,16 +66,24 @@ private fun phaseFor(cycleDay: Int, avgPeriodLength: Int, avgCycleLength: Int): 
 }
 
 /**
- * Tappable pill showing cycle day + phase. State is in-memory only for now
- * (epoch-day Long rather than LocalDate, since LocalDate isn't directly
- * rememberSaveable-compatible) — real persistence lands with Turso.
+ * Tappable pill showing cycle day + phase. Persisted to the local Turso/
+ * libSQL database (epoch-day Long rather than LocalDate, since LocalDate
+ * isn't directly rememberSaveable-compatible either).
  */
 @Composable
 fun CycleBadge(modifier: Modifier = Modifier) {
+    val coroutineScope = rememberCoroutineScope()
     var lastPeriodStartEpochDay by rememberSaveable { mutableStateOf<Long?>(null) }
     var avgCycleLength by rememberSaveable { mutableStateOf(28) }
     var avgPeriodLength by rememberSaveable { mutableStateOf(5) }
     var showDialog by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val loaded = Repository.loadCycleSettings()
+        avgCycleLength = loaded.avgCycleLength
+        avgPeriodLength = loaded.avgPeriodLength
+        lastPeriodStartEpochDay = loaded.lastPeriodStartEpochDay
+    }
 
     val cycleDay = lastPeriodStartEpochDay?.let { startEpochDay ->
         (LocalDate.now().toEpochDay() - startEpochDay).toInt() + 1
@@ -109,6 +121,9 @@ fun CycleBadge(modifier: Modifier = Modifier) {
                 avgCycleLength = newCycleLength
                 avgPeriodLength = newPeriodLength
                 showDialog = false
+                coroutineScope.launch {
+                    Repository.saveCycleSettings(newCycleLength, newPeriodLength, newStartEpochDay)
+                }
             },
             onDismiss = { showDialog = false },
         )

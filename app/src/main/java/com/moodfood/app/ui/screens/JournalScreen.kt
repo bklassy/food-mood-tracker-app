@@ -25,8 +25,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,6 +41,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.moodfood.app.data.Repository
 import com.moodfood.app.ui.theme.BlushPink
 import com.moodfood.app.ui.theme.CoralAccent
 import com.moodfood.app.ui.theme.CreamText
@@ -49,6 +53,11 @@ import com.moodfood.app.ui.theme.TimeLateEvening
 import com.moodfood.app.ui.theme.TimeMorning
 import com.moodfood.app.ui.theme.TimeNoon
 import com.moodfood.app.ui.theme.TimeTwilight
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+
+/** Every screen persists against "today" - there's no history/day-navigation UI yet. */
+internal fun todayKey(): String = LocalDate.now().toString()
 
 /**
  * Time slots a day's food/energy/nervous-system readings are logged against.
@@ -74,14 +83,25 @@ private const val NoteFieldMaxLines = 8
 
 /**
  * The home screen: bullet journal entry, cycle badge, and one block per time
- * slot for food + energy + nervous system. Text fields are editable but only
- * held in local Compose state for now — persistence lands with the Turso
- * data layer in a later phase.
+ * slot for food + energy + nervous system. Persisted to the local Turso/
+ * libSQL database, scoped to today's date.
  */
 @Composable
 fun JournalScreen() {
+    val today = remember { todayKey() }
+    val coroutineScope = rememberCoroutineScope()
     var journalText by rememberSaveable { mutableStateOf("") }
     var gratitudeText by rememberSaveable { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        val loaded = Repository.loadJournalEntry(today)
+        journalText = loaded.journalText
+        gratitudeText = loaded.gratitudeText
+    }
+
+    fun persistJournalEntry(newJournalText: String, newGratitudeText: String) {
+        coroutineScope.launch { Repository.saveJournalEntry(today, newJournalText, newGratitudeText) }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -108,7 +128,10 @@ fun JournalScreen() {
         item {
             PinkNoteField(
                 value = journalText,
-                onValueChange = { journalText = it },
+                onValueChange = {
+                    journalText = it
+                    persistJournalEntry(it, gratitudeText)
+                },
                 placeholder = "How was your day?\nWhat did you do?",
             )
         }
@@ -124,7 +147,10 @@ fun JournalScreen() {
         item {
             PinkNoteField(
                 value = gratitudeText,
-                onValueChange = { gratitudeText = it },
+                onValueChange = {
+                    gratitudeText = it
+                    persistJournalEntry(journalText, it)
+                },
                 placeholder = "One thing that went well today...",
             )
         }
@@ -161,12 +187,29 @@ fun JournalScreen() {
 
 @Composable
 private fun TimeSlotBlock(slot: TimeSlot) {
+    val today = remember { todayKey() }
+    val coroutineScope = rememberCoroutineScope()
     var noteText by rememberSaveable { mutableStateOf("") }
     var hunger by rememberSaveable { mutableStateOf(3) }
     var fullness by rememberSaveable { mutableStateOf(2) }
     var energy by rememberSaveable { mutableStateOf(3) }
     var nervousSystem by rememberSaveable { mutableStateOf(2) }
     var expanded by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val loaded = Repository.loadDaySlot(today, slot.name)
+        hunger = loaded.hunger
+        fullness = loaded.fullness
+        energy = loaded.energy
+        nervousSystem = loaded.nervousSystem
+        noteText = loaded.foodNote
+    }
+
+    fun persist(newHunger: Int, newFullness: Int, newEnergy: Int, newNervousSystem: Int, newNote: String) {
+        coroutineScope.launch {
+            Repository.saveDaySlot(today, slot.name, newHunger, newFullness, newEnergy, newNervousSystem, newNote)
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -184,15 +227,42 @@ private fun TimeSlotBlock(slot: TimeSlot) {
         )
         AnimatedVisibility(visible = expanded) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                HungerSlider(value = hunger, onValueChange = { hunger = it })
+                HungerSlider(
+                    value = hunger,
+                    onValueChange = {
+                        hunger = it
+                        persist(it, fullness, energy, nervousSystem, noteText)
+                    },
+                )
                 PinkNoteField(
                     value = noteText,
-                    onValueChange = { noteText = it },
+                    onValueChange = {
+                        noteText = it
+                        persist(hunger, fullness, energy, nervousSystem, it)
+                    },
                     placeholder = slot.placeholder,
                 )
-                FullnessSlider(value = fullness, onValueChange = { fullness = it })
-                EnergySlider(value = energy, onValueChange = { energy = it })
-                NervousSystemSlider(value = nervousSystem, onValueChange = { nervousSystem = it })
+                FullnessSlider(
+                    value = fullness,
+                    onValueChange = {
+                        fullness = it
+                        persist(hunger, it, energy, nervousSystem, noteText)
+                    },
+                )
+                EnergySlider(
+                    value = energy,
+                    onValueChange = {
+                        energy = it
+                        persist(hunger, fullness, it, nervousSystem, noteText)
+                    },
+                )
+                NervousSystemSlider(
+                    value = nervousSystem,
+                    onValueChange = {
+                        nervousSystem = it
+                        persist(hunger, fullness, energy, it, noteText)
+                    },
+                )
             }
         }
     }
