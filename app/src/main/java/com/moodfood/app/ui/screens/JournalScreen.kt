@@ -1,13 +1,22 @@
 package com.moodfood.app.ui.screens
 
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -17,10 +26,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.moodfood.app.ui.theme.BlushPink
 import com.moodfood.app.ui.theme.CoralAccent
 import com.moodfood.app.ui.theme.SlatePlaceholder
@@ -35,6 +48,9 @@ private enum class TimeSlot(val label: String, val placeholder: String) {
     Evening("Evening", "Candlelight dinner with a roast"),
     LateEvening("Late Evening", "What's for pud?"),
 }
+
+private val NoteFieldLineHeight = 22.sp
+private const val NoteFieldMaxLines = 8
 
 /**
  * The home screen: bullet journal entry, cycle badge, and one block per time
@@ -108,13 +124,22 @@ private fun TimeSlotBlock(slot: TimeSlot) {
     }
 }
 
-/** A blush-pink card wrapping an editable, placeholder-aware text field. */
+/**
+ * A blush-pink card wrapping an editable, placeholder-aware text field. Grows
+ * with content up to [NoteFieldMaxLines] lines, then clips and scrolls
+ * internally with a thin scrollbar rather than pushing the rest of the
+ * journal down indefinitely.
+ */
 @Composable
 private fun PinkNoteField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
 ) {
+    val density = LocalDensity.current
+    val maxFieldHeight = with(density) { NoteFieldLineHeight.toDp() } * NoteFieldMaxLines
+    val scrollState = rememberScrollState()
+
     Card(
         colors = CardDefaults.cardColors(containerColor = BlushPink),
         modifier = Modifier.fillMaxWidth(),
@@ -123,17 +148,59 @@ private fun PinkNoteField(
             if (value.isEmpty()) {
                 Text(
                     text = placeholder,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontStyle = FontStyle.Italic,
+                        lineHeight = NoteFieldLineHeight,
+                    ),
                     color = SlatePlaceholder,
                 )
             }
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = SlateText),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    color = SlateText,
+                    lineHeight = NoteFieldLineHeight,
+                ),
                 cursorBrush = SolidColor(SlateText),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxFieldHeight)
+                    .verticalScroll(scrollState)
+                    .padding(end = 8.dp),
+            )
+            NoteFieldScrollbar(
+                scrollState = scrollState,
+                trackHeight = maxFieldHeight,
+                modifier = Modifier.align(Alignment.TopEnd),
             )
         }
+    }
+}
+
+/** Thin scroll thumb shown only once [scrollState]'s content actually overflows. */
+@Composable
+private fun NoteFieldScrollbar(
+    scrollState: ScrollState,
+    trackHeight: Dp,
+    modifier: Modifier = Modifier,
+) {
+    if (scrollState.maxValue <= 0) return
+
+    val viewportPx = scrollState.viewportSize.toFloat()
+    val contentPx = viewportPx + scrollState.maxValue
+    val thumbFraction = (viewportPx / contentPx).coerceIn(0.1f, 1f)
+    val scrollFraction = scrollState.value / scrollState.maxValue.toFloat()
+    val thumbHeight = trackHeight * thumbFraction
+    val thumbOffset = (trackHeight - thumbHeight) * scrollFraction
+
+    Box(modifier = modifier.width(4.dp).height(trackHeight)) {
+        Box(
+            modifier = Modifier
+                .offset(y = thumbOffset)
+                .width(4.dp)
+                .height(thumbHeight)
+                .background(CoralAccent.copy(alpha = 0.6f), RoundedCornerShape(2.dp)),
+        )
     }
 }
