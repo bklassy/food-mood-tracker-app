@@ -1,6 +1,9 @@
 package com.moodfood.app.data
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
@@ -21,16 +24,52 @@ private val defaultMovement = MovementData("", null, "")
 private val defaultSocial = SocialData("", null)
 private val defaultCycleSettings = CycleSettingsData(28, 5, null)
 
+private const val TAG = "Repository"
+
 /**
  * All persistence for the app, keyed by an ISO date string (LocalDate.toString())
  * for "today" - there's no history/day-navigation UI yet, so every screen just
  * reads and writes today's row. Every call opens its own connection, matching
  * the pattern in Turso's own example app rather than holding one open long-term.
+ *
+ * Every operation goes through [dbRead]/[dbWrite], which serialize all DB
+ * access through one [Mutex] and catch failures instead of propagating them:
+ * typing quickly fires a save per keystroke from independent coroutines, and
+ * without serializing them two writes can hit the local SQLite file at the
+ * same time and throw "database is locked" - a real crash this app hit
+ * before this existed. A single-user local file has no need for real
+ * concurrency, so queuing everything through one lock is the simplest fix,
+ * and catching failures means a rare write hiccup degrades quietly (that one
+ * change might not persist) instead of taking the whole app down.
  */
 object Repository {
     private val db get() = AppDatabase.db
+    private val dbMutex = Mutex()
 
-    suspend fun loadJournalEntry(date: String): JournalEntryData = withContext(Dispatchers.IO) {
+    private suspend fun <T> dbRead(default: T, block: () -> T): T = dbMutex.withLock {
+        withContext(Dispatchers.IO) {
+            try {
+                block()
+            } catch (e: Exception) {
+                Log.e(TAG, "Read failed", e)
+                default
+            }
+        }
+    }
+
+    private suspend fun dbWrite(block: () -> Unit) {
+        dbMutex.withLock {
+            withContext(Dispatchers.IO) {
+                try {
+                    block()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Write failed", e)
+                }
+            }
+        }
+    }
+
+    suspend fun loadJournalEntry(date: String): JournalEntryData = dbRead(defaultJournalEntry) {
         db.connect().use { conn ->
             conn.query("SELECT journal_text, gratitude_text FROM journal_entries WHERE date = ?", date).use { rows ->
                 rows.map { row -> JournalEntryData(row[0] as String, row[1] as String) }
@@ -38,7 +77,7 @@ object Repository {
         }
     }
 
-    suspend fun saveJournalEntry(date: String, journalText: String, gratitudeText: String) = withContext(Dispatchers.IO) {
+    suspend fun saveJournalEntry(date: String, journalText: String, gratitudeText: String) = dbWrite {
         db.connect().use { conn ->
             conn.execute(
                 """
@@ -50,7 +89,7 @@ object Repository {
         }
     }
 
-    suspend fun loadDaySlot(date: String, slot: String): DaySlotData = withContext(Dispatchers.IO) {
+    suspend fun loadDaySlot(date: String, slot: String): DaySlotData = dbRead(defaultDaySlot) {
         db.connect().use { conn ->
             conn.query(
                 "SELECT hunger, fullness, energy, nervous_system, food_note FROM day_slots WHERE date = ? AND slot = ?",
@@ -77,7 +116,7 @@ object Repository {
         energy: Int?,
         nervousSystem: Int?,
         foodNote: String,
-    ) = withContext(Dispatchers.IO) {
+    ) = dbWrite {
         db.connect().use { conn ->
             conn.execute(
                 """
@@ -92,7 +131,7 @@ object Repository {
         }
     }
 
-    suspend fun loadAlcohol(date: String): AlcoholData = withContext(Dispatchers.IO) {
+    suspend fun loadAlcohol(date: String): AlcoholData = dbRead(defaultAlcohol) {
         db.connect().use { conn ->
             conn.query("SELECT drink_count, note FROM alcohol_log WHERE date = ?", date).use { rows ->
                 rows.map { row -> AlcoholData((row[0] as Long).toInt(), row[1] as String) }
@@ -100,7 +139,7 @@ object Repository {
         }
     }
 
-    suspend fun saveAlcohol(date: String, drinkCount: Int, note: String) = withContext(Dispatchers.IO) {
+    suspend fun saveAlcohol(date: String, drinkCount: Int, note: String) = dbWrite {
         db.connect().use { conn ->
             conn.execute(
                 """
@@ -112,7 +151,7 @@ object Repository {
         }
     }
 
-    suspend fun loadCoffeeEntries(date: String): List<CoffeeEntryData> = withContext(Dispatchers.IO) {
+    suspend fun loadCoffeeEntries(date: String): List<CoffeeEntryData> = dbRead(emptyList()) {
         db.connect().use { conn ->
             conn.query("SELECT id, time, shot_count, note FROM coffee_log WHERE date = ?", date).use { rows ->
                 rows.map { row -> CoffeeEntryData(row[0] as String, row[1] as String, (row[2] as Long).toInt(), row[3] as String) }
@@ -120,22 +159,24 @@ object Repository {
         }
     }
 
-    suspend fun addCoffeeEntry(date: String, time: String, shotCount: Int, note: String): String = withContext(Dispatchers.IO) {
+    suspend fun addCoffeeEntry(date: String, time: String, shotCount: Int, note: String): String {
         val id = UUID.randomUUID().toString()
-        db.connect().use { conn ->
-            conn.execute(
-                "INSERT INTO coffee_log (id, date, time, shot_count, note) VALUES (?, ?, ?, ?, ?)",
-                id, date, time, shotCount, note,
-            )
+        dbWrite {
+            db.connect().use { conn ->
+                conn.execute(
+                    "INSERT INTO coffee_log (id, date, time, shot_count, note) VALUES (?, ?, ?, ?, ?)",
+                    id, date, time, shotCount, note,
+                )
+            }
         }
-        id
+        return id
     }
 
-    suspend fun deleteCoffeeEntry(id: String) = withContext(Dispatchers.IO) {
+    suspend fun deleteCoffeeEntry(id: String) = dbWrite {
         db.connect().use { conn -> conn.execute("DELETE FROM coffee_log WHERE id = ?", id) }
     }
 
-    suspend fun loadBowelMovements(date: String): List<BowelMovementData> = withContext(Dispatchers.IO) {
+    suspend fun loadBowelMovements(date: String): List<BowelMovementData> = dbRead(emptyList()) {
         db.connect().use { conn ->
             conn.query("SELECT id, time, bristol_type, note FROM bowel_movements WHERE date = ?", date).use { rows ->
                 rows.map { row -> BowelMovementData(row[0] as String, row[1] as String, (row[2] as Long).toInt(), row[3] as String) }
@@ -143,22 +184,24 @@ object Repository {
         }
     }
 
-    suspend fun addBowelMovement(date: String, time: String, bristolType: Int, note: String): String = withContext(Dispatchers.IO) {
+    suspend fun addBowelMovement(date: String, time: String, bristolType: Int, note: String): String {
         val id = UUID.randomUUID().toString()
-        db.connect().use { conn ->
-            conn.execute(
-                "INSERT INTO bowel_movements (id, date, time, bristol_type, note) VALUES (?, ?, ?, ?, ?)",
-                id, date, time, bristolType, note,
-            )
+        dbWrite {
+            db.connect().use { conn ->
+                conn.execute(
+                    "INSERT INTO bowel_movements (id, date, time, bristol_type, note) VALUES (?, ?, ?, ?, ?)",
+                    id, date, time, bristolType, note,
+                )
+            }
         }
-        id
+        return id
     }
 
-    suspend fun deleteBowelMovement(id: String) = withContext(Dispatchers.IO) {
+    suspend fun deleteBowelMovement(id: String) = dbWrite {
         db.connect().use { conn -> conn.execute("DELETE FROM bowel_movements WHERE id = ?", id) }
     }
 
-    suspend fun loadMovement(date: String): MovementData = withContext(Dispatchers.IO) {
+    suspend fun loadMovement(date: String): MovementData = dbRead(defaultMovement) {
         db.connect().use { conn ->
             conn.query("SELECT movement_type, feeling, note FROM movement_log WHERE date = ?", date).use { rows ->
                 rows.map { row -> MovementData(row[0] as String, row[1] as String?, row[2] as String) }
@@ -166,7 +209,7 @@ object Repository {
         }
     }
 
-    suspend fun saveMovement(date: String, movementType: String, feeling: String?, note: String) = withContext(Dispatchers.IO) {
+    suspend fun saveMovement(date: String, movementType: String, feeling: String?, note: String) = dbWrite {
         db.connect().use { conn ->
             conn.execute(
                 """
@@ -178,7 +221,7 @@ object Repository {
         }
     }
 
-    suspend fun loadSocial(date: String): SocialData = withContext(Dispatchers.IO) {
+    suspend fun loadSocial(date: String): SocialData = dbRead(defaultSocial) {
         db.connect().use { conn ->
             conn.query("SELECT note, feeling FROM social_log WHERE date = ?", date).use { rows ->
                 rows.map { row -> SocialData(row[0] as String, row[1] as String?) }
@@ -186,7 +229,7 @@ object Repository {
         }
     }
 
-    suspend fun saveSocial(date: String, note: String, feeling: String?) = withContext(Dispatchers.IO) {
+    suspend fun saveSocial(date: String, note: String, feeling: String?) = dbWrite {
         db.connect().use { conn ->
             conn.execute(
                 """
@@ -198,7 +241,7 @@ object Repository {
         }
     }
 
-    suspend fun loadSymptoms(date: String): List<SymptomEntryData> = withContext(Dispatchers.IO) {
+    suspend fun loadSymptoms(date: String): List<SymptomEntryData> = dbRead(emptyList()) {
         db.connect().use { conn ->
             conn.query("SELECT id, name, note FROM symptoms_log WHERE date = ?", date).use { rows ->
                 rows.map { row -> SymptomEntryData(row[0] as String, row[1] as String, row[2] as String) }
@@ -206,19 +249,21 @@ object Repository {
         }
     }
 
-    suspend fun addSymptom(date: String, name: String, note: String): String = withContext(Dispatchers.IO) {
+    suspend fun addSymptom(date: String, name: String, note: String): String {
         val id = UUID.randomUUID().toString()
-        db.connect().use { conn ->
-            conn.execute("INSERT INTO symptoms_log (id, date, name, note) VALUES (?, ?, ?, ?)", id, date, name, note)
+        dbWrite {
+            db.connect().use { conn ->
+                conn.execute("INSERT INTO symptoms_log (id, date, name, note) VALUES (?, ?, ?, ?)", id, date, name, note)
+            }
         }
-        id
+        return id
     }
 
-    suspend fun deleteSymptom(id: String) = withContext(Dispatchers.IO) {
+    suspend fun deleteSymptom(id: String) = dbWrite {
         db.connect().use { conn -> conn.execute("DELETE FROM symptoms_log WHERE id = ?", id) }
     }
 
-    suspend fun loadCycleSettings(): CycleSettingsData = withContext(Dispatchers.IO) {
+    suspend fun loadCycleSettings(): CycleSettingsData = dbRead(defaultCycleSettings) {
         db.connect().use { conn ->
             conn.query(
                 "SELECT avg_cycle_length, avg_period_length, last_period_start_epoch_day FROM cycle_settings WHERE id = 0",
@@ -234,7 +279,7 @@ object Repository {
         }
     }
 
-    suspend fun saveCycleSettings(avgCycleLength: Int, avgPeriodLength: Int, lastPeriodStartEpochDay: Long?) = withContext(Dispatchers.IO) {
+    suspend fun saveCycleSettings(avgCycleLength: Int, avgPeriodLength: Int, lastPeriodStartEpochDay: Long?) = dbWrite {
         db.connect().use { conn ->
             conn.execute(
                 """
@@ -249,7 +294,7 @@ object Repository {
         }
     }
 
-    suspend fun loadFavoriteFoods(): String = withContext(Dispatchers.IO) {
+    suspend fun loadFavoriteFoods(): String = dbRead("") {
         db.connect().use { conn ->
             conn.query("SELECT content FROM favorite_foods WHERE id = 0").use { rows ->
                 rows.map { row -> row[0] as String }
@@ -257,7 +302,7 @@ object Repository {
         }
     }
 
-    suspend fun saveFavoriteFoods(content: String) = withContext(Dispatchers.IO) {
+    suspend fun saveFavoriteFoods(content: String) = dbWrite {
         db.connect().use { conn ->
             conn.execute(
                 """
@@ -269,7 +314,7 @@ object Repository {
         }
     }
 
-    suspend fun loadMentalHealthTools(): String = withContext(Dispatchers.IO) {
+    suspend fun loadMentalHealthTools(): String = dbRead("") {
         db.connect().use { conn ->
             conn.query("SELECT content FROM mental_health_tools WHERE id = 0").use { rows ->
                 rows.map { row -> row[0] as String }
@@ -277,7 +322,7 @@ object Repository {
         }
     }
 
-    suspend fun saveMentalHealthTools(content: String) = withContext(Dispatchers.IO) {
+    suspend fun saveMentalHealthTools(content: String) = dbWrite {
         db.connect().use { conn ->
             conn.execute(
                 """
