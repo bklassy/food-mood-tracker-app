@@ -33,6 +33,7 @@ import java.time.format.DateTimeFormatter
 private data class CoffeeEntry(
     val id: Long,
     val time: LocalTime,
+    val shotCount: Int,
     val note: String,
 )
 
@@ -74,8 +75,8 @@ fun CoffeeSection() {
 
     if (showDialog) {
         LogCoffeeDialog(
-            onConfirm = { time, note ->
-                entries.value = entries.value + CoffeeEntry(nextId, time, note)
+            onConfirm = { time, shotCount, note ->
+                entries.value = entries.value + CoffeeEntry(nextId, time, shotCount, note)
                 nextId++
                 showDialog = false
             },
@@ -103,6 +104,11 @@ private fun CoffeeRow(entry: CoffeeEntry, onDelete: () -> Unit) {
                 color = SlateText,
             )
             Text(
+                text = if (entry.shotCount == 1) "1 shot" else "${entry.shotCount} shots",
+                style = MaterialTheme.typography.labelLarge,
+                color = CoralAccent,
+            )
+            Text(
                 text = entry.note.ifBlank { "—" },
                 style = MaterialTheme.typography.bodyMedium,
                 color = SlateText,
@@ -122,11 +128,12 @@ private fun CoffeeRow(entry: CoffeeEntry, onDelete: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LogCoffeeDialog(
-    onConfirm: (time: LocalTime, note: String) -> Unit,
+    onConfirm: (time: LocalTime, shotCount: Int, note: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val now = remember { LocalTime.now() }
     val timeState = rememberTimePickerState(initialHour = now.hour, initialMinute = now.minute, is24Hour = false)
+    var shotCount by remember { mutableStateOf(1) }
     var note by remember { mutableStateOf("") }
 
     AlertDialog(
@@ -135,6 +142,23 @@ private fun LogCoffeeDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 TimePicker(state = timeState)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    StepperButton(symbol = "–", onClick = { if (shotCount > 0) shotCount-- })
+                    Text(
+                        text = shotCount.toString(),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = CoralAccent,
+                    )
+                    StepperButton(symbol = "+", onClick = { shotCount++ })
+                    Text(
+                        text = if (shotCount == 1) "espresso shot" else "espresso shots",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = SlateText,
+                    )
+                }
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
@@ -146,7 +170,7 @@ private fun LogCoffeeDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                onConfirm(LocalTime.of(timeState.hour, timeState.minute), note)
+                onConfirm(LocalTime.of(timeState.hour, timeState.minute), shotCount, note)
             }) { Text("Save") }
         },
         dismissButton = {

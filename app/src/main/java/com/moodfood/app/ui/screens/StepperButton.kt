@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.moodfood.app.ui.theme.CoralAccent
 import com.moodfood.app.ui.theme.CreamText
@@ -27,10 +28,11 @@ fun StepperButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     highlighted: Boolean = false,
+    size: Dp = 36.dp,
 ) {
     Box(
         modifier = modifier
-            .size(36.dp)
+            .size(size)
             .clip(CircleShape)
             .background(if (highlighted) CoralAccent else SlotPill)
             .clickable(onClick = onClick),

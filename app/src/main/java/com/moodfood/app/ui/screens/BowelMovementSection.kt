@@ -1,11 +1,13 @@
 package com.moodfood.app.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -177,12 +179,16 @@ private fun LogBowelMovementDialog(
 @Composable
 private fun BristolTypeSelector(selected: Int, onSelect: (Int) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+        ) {
             for (type in 1..7) {
                 StepperButton(
                     symbol = type.toString(),
                     onClick = { onSelect(type) },
                     highlighted = type == selected,
+                    size = 30.dp,
                 )
             }
         }
