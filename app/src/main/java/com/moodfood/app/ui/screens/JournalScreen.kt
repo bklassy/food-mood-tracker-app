@@ -92,6 +92,8 @@ fun JournalScreen() {
             )
         }
 
+        item { CycleBadge() }
+
         item {
             Text(
                 text = "Food",
@@ -103,12 +105,18 @@ fun JournalScreen() {
         items(TimeSlot.values().toList()) { slot ->
             TimeSlotBlock(slot)
         }
+
+        item { AlcoholBlock() }
+
+        item { BowelMovementSection() }
     }
 }
 
 @Composable
 private fun TimeSlotBlock(slot: TimeSlot) {
     var noteText by rememberSaveable { mutableStateOf("") }
+    var energy by rememberSaveable { mutableStateOf(3) }
+    var nervousSystem by rememberSaveable { mutableStateOf(2) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -116,6 +124,8 @@ private fun TimeSlotBlock(slot: TimeSlot) {
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
         )
+        EnergySlider(value = energy, onValueChange = { energy = it })
+        NervousSystemSlider(value = nervousSystem, onValueChange = { nervousSystem = it })
         PinkNoteField(
             value = noteText,
             onValueChange = { noteText = it },
@@ -131,7 +141,7 @@ private fun TimeSlotBlock(slot: TimeSlot) {
  * journal down indefinitely.
  */
 @Composable
-private fun PinkNoteField(
+fun PinkNoteField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
