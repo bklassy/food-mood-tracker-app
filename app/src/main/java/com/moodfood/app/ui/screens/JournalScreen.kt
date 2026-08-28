@@ -146,6 +146,7 @@ private fun TimeSlotBlock(slot: TimeSlot) {
             style = MaterialTheme.typography.titleMedium,
             color = slot.pillTextColor,
             modifier = Modifier
+                .align(Alignment.End)
                 .background(slot.pillColor, RoundedCornerShape(12.dp))
                 .clickable { expanded = !expanded }
                 .padding(horizontal = 14.dp, vertical = 6.dp),
