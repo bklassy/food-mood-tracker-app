@@ -125,6 +125,8 @@ fun JournalScreen() {
             TimeSlotBlock(slot)
         }
 
+        item { CoffeeSection() }
+
         item { AlcoholBlock() }
 
         item { BowelMovementSection() }
@@ -136,7 +138,7 @@ private fun TimeSlotBlock(slot: TimeSlot) {
     var noteText by rememberSaveable { mutableStateOf("") }
     var energy by rememberSaveable { mutableStateOf(3) }
     var nervousSystem by rememberSaveable { mutableStateOf(2) }
-    var expanded by rememberSaveable { mutableStateOf(true) }
+    var expanded by rememberSaveable { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
