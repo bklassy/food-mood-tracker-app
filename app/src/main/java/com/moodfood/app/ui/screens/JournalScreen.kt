@@ -1,7 +1,9 @@
 package com.moodfood.app.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -134,23 +136,29 @@ private fun TimeSlotBlock(slot: TimeSlot) {
     var noteText by rememberSaveable { mutableStateOf("") }
     var energy by rememberSaveable { mutableStateOf(3) }
     var nervousSystem by rememberSaveable { mutableStateOf(2) }
+    var expanded by rememberSaveable { mutableStateOf(true) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = slot.label,
+            text = "${slot.label}  ${if (expanded) "▾" else "▸"}",
             style = MaterialTheme.typography.titleMedium,
             color = slot.pillTextColor,
             modifier = Modifier
                 .background(slot.pillColor, RoundedCornerShape(12.dp))
+                .clickable { expanded = !expanded }
                 .padding(horizontal = 14.dp, vertical = 6.dp),
         )
-        EnergySlider(value = energy, onValueChange = { energy = it })
-        NervousSystemSlider(value = nervousSystem, onValueChange = { nervousSystem = it })
-        PinkNoteField(
-            value = noteText,
-            onValueChange = { noteText = it },
-            placeholder = slot.placeholder,
-        )
+        AnimatedVisibility(visible = expanded) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                EnergySlider(value = energy, onValueChange = { energy = it })
+                NervousSystemSlider(value = nervousSystem, onValueChange = { nervousSystem = it })
+                PinkNoteField(
+                    value = noteText,
+                    onValueChange = { noteText = it },
+                    placeholder = slot.placeholder,
+                )
+            }
+        }
     }
 }
 
