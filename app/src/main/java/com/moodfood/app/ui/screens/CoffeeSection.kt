@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.moodfood.app.ui.theme.BlushPink
+import com.moodfood.app.ui.theme.TealBackgroundDeep
 import com.moodfood.app.ui.theme.CoralAccent
 import com.moodfood.app.ui.theme.SlatePlaceholder
 import com.moodfood.app.ui.theme.SlateText
@@ -59,12 +60,17 @@ fun CoffeeSection() {
     var draftShotCount by remember { mutableStateOf(1) }
     var draftNote by remember { mutableStateOf("") }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         Text(
             text = "☕ Coffee  ${if (expanded) "▾" else "▸"}",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.clickable { expanded = !expanded },
+            modifier = Modifier
+                .align(Alignment.End)
+                .clickable { expanded = !expanded },
         )
 
         AnimatedVisibility(visible = expanded) {
@@ -87,7 +93,7 @@ fun CoffeeSection() {
                         HalfScale {
                             TimePicker(
                                 state = timeState,
-                                colors = TimePickerDefaults.colors(clockDialColor = BlushPink),
+                                colors = TimePickerDefaults.colors(clockDialColor = TealBackgroundDeep),
                             )
                         }
                         Row(
