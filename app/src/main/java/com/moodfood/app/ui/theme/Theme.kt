@@ -18,8 +18,8 @@ private val MoodFoodColorScheme = darkColorScheme(
 )
 
 /**
- * Mood & Food intentionally ignores system light/dark mode: the teal-and-blush
- * palette is the whole point of the app and isn't meant to invert.
+ * Mood & Food intentionally ignores system light/dark mode - always this
+ * fixed dark-navy palette, by design, never a light theme.
  */
 @Composable
 fun MoodFoodTheme(content: @Composable () -> Unit) {

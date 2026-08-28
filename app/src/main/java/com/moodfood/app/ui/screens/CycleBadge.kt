@@ -35,16 +35,17 @@ import com.moodfood.app.ui.theme.PhaseFollicular
 import com.moodfood.app.ui.theme.PhaseLuteal
 import com.moodfood.app.ui.theme.PhaseMenstrual
 import com.moodfood.app.ui.theme.PhaseOvulation
+import com.moodfood.app.ui.theme.SlateText
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
-private enum class CyclePhase(val label: String, val color: Color) {
-    Menstrual("Menstrual", PhaseMenstrual),
-    Follicular("Follicular", PhaseFollicular),
-    Ovulation("Ovulation", PhaseOvulation),
-    Luteal("Luteal", PhaseLuteal),
+private enum class CyclePhase(val label: String, val color: Color, val textColor: Color) {
+    Menstrual("Menstrual", PhaseMenstrual, CreamText),
+    Follicular("Follicular", PhaseFollicular, CreamText),
+    Ovulation("Ovulation", PhaseOvulation, SlateText),
+    Luteal("Luteal", PhaseLuteal, SlateText),
 }
 
 private val PeriodDateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
@@ -85,10 +86,11 @@ fun CycleBadge(modifier: Modifier = Modifier) {
         else -> "Day $cycleDay+ of your cycle"
     }
     val badgeColor = phase?.color ?: CoralAccent
+    val badgeTextColor = phase?.textColor ?: CreamText
 
     Text(
         text = badgeText,
-        color = CreamText,
+        color = badgeTextColor,
         fontWeight = FontWeight.SemiBold,
         style = MaterialTheme.typography.labelLarge,
         modifier = modifier

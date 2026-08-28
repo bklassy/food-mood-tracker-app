@@ -64,8 +64,8 @@ private enum class TimeSlot(
     Twilight("Twilight", "Any insomnia meals or snacks? Did they feel satisfying?", TimeTwilight, CreamText),
     Morning("Morning", "What sounded good this morning? How satisfying was it?", TimeMorning, SlateText),
     Noon("Noon", "What was lunch like — satisfying, rushed, something else?", TimeNoon, SlateText),
-    Afternoon("Afternoon", "Any afternoon bites? Were they what you wanted?", TimeAfternoon, SlateText),
-    Evening("Evening", "What was dinner like? Did it hit the spot?", TimeEvening, CreamText),
+    Afternoon("Afternoon", "Any afternoon bites? Were they what you wanted?", TimeAfternoon, CreamText),
+    Evening("Evening", "What was dinner like? Did it hit the spot?", TimeEvening, SlateText),
     LateEvening("Late Evening", "Anything after dinner? How did it feel?", TimeLateEvening, CreamText),
 }
 

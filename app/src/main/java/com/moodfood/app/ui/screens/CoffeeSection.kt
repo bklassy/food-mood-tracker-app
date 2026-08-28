@@ -1,12 +1,14 @@
 package com.moodfood.app.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.moodfood.app.ui.theme.BlushPink
+import com.moodfood.app.ui.theme.SectionCoffee
 import com.moodfood.app.ui.theme.TealBackgroundDeep
 import com.moodfood.app.ui.theme.CoralAccent
 import com.moodfood.app.ui.theme.SlatePlaceholder
@@ -67,10 +70,12 @@ fun CoffeeSection() {
         Text(
             text = "☕ Coffee  ${if (expanded) "▾" else "▸"}",
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = SlateText,
             modifier = Modifier
                 .align(Alignment.End)
-                .clickable { expanded = !expanded },
+                .background(SectionCoffee, RoundedCornerShape(12.dp))
+                .clickable { expanded = !expanded }
+                .padding(horizontal = 14.dp, vertical = 6.dp),
         )
 
         AnimatedVisibility(visible = expanded) {
