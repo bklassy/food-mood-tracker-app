@@ -24,7 +24,7 @@ import com.moodfood.app.ui.theme.SlotPill
 import java.time.LocalTime
 
 /** Vertical drag distance, in px, needed to move the value by one step. */
-private const val DragPxPerStep = 28f
+private const val DragPxPerStep = 36f
 
 /**
  * A small hour/minute/AM-PM control: swipe a number up/down to change it,
@@ -42,14 +42,14 @@ fun CompactTimePicker(time: LocalTime, onTimeChange: (LocalTime) -> Unit) {
     ) {
         SwipeableNumber(
             text = displayHour.toString(),
-            onSwipeUp = { onTimeChange(time.plusHours(1)) },
-            onSwipeDown = { onTimeChange(time.minusHours(1)) },
+            onSwipeUp = { onTimeChange(time.minusHours(1)) },
+            onSwipeDown = { onTimeChange(time.plusHours(1)) },
         )
-        Text(text = ":", style = MaterialTheme.typography.titleMedium, color = SlateText)
+        Text(text = ":", style = MaterialTheme.typography.titleLarge, color = SlateText)
         SwipeableNumber(
             text = "%02d".format(time.minute),
-            onSwipeUp = { onTimeChange(time.plusMinutes(15)) },
-            onSwipeDown = { onTimeChange(time.minusMinutes(15)) },
+            onSwipeUp = { onTimeChange(time.minusMinutes(15)) },
+            onSwipeDown = { onTimeChange(time.plusMinutes(15)) },
         )
         AmPmToggle(isPm = isPm, onToggle = { onTimeChange(if (isPm) time.minusHours(12) else time.plusHours(12)) })
     }
@@ -59,9 +59,9 @@ fun CompactTimePicker(time: LocalTime, onTimeChange: (LocalTime) -> Unit) {
 private fun SwipeableNumber(text: String, onSwipeUp: () -> Unit, onSwipeDown: () -> Unit) {
     Box(
         modifier = Modifier
-            .background(CoralAccent.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
-            .width(40.dp)
-            .height(44.dp)
+            .background(CoralAccent.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+            .width(64.dp)
+            .height(88.dp)
             .pointerInput(Unit) {
                 var accumulated = 0f
                 detectVerticalDragGestures(onDragEnd = { accumulated = 0f }) { change, dragAmount ->
@@ -79,7 +79,7 @@ private fun SwipeableNumber(text: String, onSwipeUp: () -> Unit, onSwipeDown: ()
             },
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = text, style = MaterialTheme.typography.titleMedium, color = SlateText)
+        Text(text = text, style = MaterialTheme.typography.headlineLarge, color = SlateText)
     }
 }
 
