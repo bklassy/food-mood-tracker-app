@@ -62,7 +62,7 @@ private enum class TimeSlot(
 ) {
     Twilight("Twilight", "Any insomnia meals or snacks?", TimeTwilight, CreamText),
     Morning("Morning", "Nourishing start to the day", TimeMorning, SlateText),
-    Noon("Noon", "Lunchtime", TimeNoon, CreamText),
+    Noon("Noon", "Lunchtime", TimeNoon, SlateText),
     Afternoon("Afternoon", "Lite bites to hold over until dinner", TimeAfternoon, SlateText),
     Evening("Evening", "Candlelight dinner with a roast", TimeEvening, CreamText),
     LateEvening("Late Evening", "What's for pud?", TimeLateEvening, CreamText),
