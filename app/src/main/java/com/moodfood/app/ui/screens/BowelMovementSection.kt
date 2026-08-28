@@ -11,8 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,16 +54,19 @@ private val timeFormatter = DateTimeFormatter.ofPattern("h:mm a")
 /**
  * Bowel movement log: multiple timestamped entries per day, each with a
  * Bristol Stool Scale type + note. Collapsible like the time slots/Alcohol -
- * tap the header to reveal the log list plus an inline add-entry row (no
- * dialog, no Material3 TimePicker). In-memory only for now.
+ * tap the header to reveal the log list plus an inline add-entry card (no
+ * popup dialog, but the Material3 TimePicker embedded directly in the card -
+ * the custom swipe-to-change control it replaced wasn't reliable enough).
+ * In-memory only for now.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BowelMovementSection() {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val entries = remember { mutableStateOf(listOf<BowelMovementEntry>()) }
     var nextId by remember { mutableStateOf(0L) }
 
-    var draftTime by remember { mutableStateOf(LocalTime.of(11, 0)) }
+    val timeState = rememberTimePickerState(initialHour = 11, initialMinute = 0, is24Hour = false)
     var draftBristolType by remember { mutableStateOf(4) }
     var draftNote by remember { mutableStateOf("") }
 
@@ -89,7 +95,7 @@ fun BowelMovementSection() {
                         modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        CompactTimePicker(time = draftTime, onTimeChange = { draftTime = it })
+                        TimePicker(state = timeState)
                         BristolTypeSelector(selected = draftBristolType, onSelect = { draftBristolType = it })
                         PinkNoteField(
                             value = draftNote,
@@ -101,7 +107,8 @@ fun BowelMovementSection() {
                             style = MaterialTheme.typography.labelLarge,
                             color = CoralAccent,
                             modifier = Modifier.clickable {
-                                entries.value = entries.value + BowelMovementEntry(nextId, draftTime, draftBristolType, draftNote)
+                                val time = LocalTime.of(timeState.hour, timeState.minute)
+                                entries.value = entries.value + BowelMovementEntry(nextId, time, draftBristolType, draftNote)
                                 nextId++
                                 draftNote = ""
                             },

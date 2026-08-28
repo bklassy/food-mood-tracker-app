@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,16 +42,19 @@ private val coffeeTimeFormatter = DateTimeFormatter.ofPattern("h:mm a")
 /**
  * Coffee log: multiple timestamped entries per day, each with a shot count
  * + note. Collapsible like the time slots/Alcohol - tap the header to reveal
- * the log list plus an inline add-entry row (no dialog, no Material3
- * TimePicker). In-memory only for now.
+ * the log list plus an inline add-entry card (no popup dialog, but the
+ * Material3 TimePicker embedded directly in the card - the custom
+ * swipe-to-change control it replaced wasn't reliable enough). In-memory
+ * only for now.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CoffeeSection() {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val entries = remember { mutableStateOf(listOf<CoffeeEntry>()) }
     var nextId by remember { mutableStateOf(0L) }
 
-    var draftTime by remember { mutableStateOf(LocalTime.of(9, 30)) }
+    val timeState = rememberTimePickerState(initialHour = 9, initialMinute = 30, is24Hour = false)
     var draftShotCount by remember { mutableStateOf(1) }
     var draftNote by remember { mutableStateOf("") }
 
@@ -77,7 +83,7 @@ fun CoffeeSection() {
                         modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        CompactTimePicker(time = draftTime, onTimeChange = { draftTime = it })
+                        TimePicker(state = timeState)
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -105,7 +111,8 @@ fun CoffeeSection() {
                             style = MaterialTheme.typography.labelLarge,
                             color = CoralAccent,
                             modifier = Modifier.clickable {
-                                entries.value = entries.value + CoffeeEntry(nextId, draftTime, draftShotCount, draftNote)
+                                val time = LocalTime.of(timeState.hour, timeState.minute)
+                                entries.value = entries.value + CoffeeEntry(nextId, time, draftShotCount, draftNote)
                                 nextId++
                                 draftNote = ""
                             },
