@@ -2,26 +2,34 @@ package com.moodfood.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.moodfood.app.ui.theme.CoralAccent
 import com.moodfood.app.ui.theme.CreamText
+import com.moodfood.app.ui.theme.SlateText
 import com.moodfood.app.ui.theme.SlotPill
 import java.time.LocalTime
 
+/** Vertical drag distance, in px, needed to move the value by one step. */
+private const val DragPxPerStep = 28f
+
 /**
- * A small inline hour/minute/AM-PM stepper, built from the same StepperButton
- * pills used everywhere else. Stands in for Material3's TimePicker, which is
- * a full clock-dial widget - much bigger than this app needs for "roughly
- * what time was it."
+ * A small hour/minute/AM-PM control: swipe a number up/down to change it,
+ * rather than tapping +/- buttons. Stands in for Material3's TimePicker,
+ * which is a full clock-dial widget - much bigger than this app needs.
  */
 @Composable
 fun CompactTimePicker(time: LocalTime, onTimeChange: (LocalTime) -> Unit) {
@@ -32,25 +40,46 @@ fun CompactTimePicker(time: LocalTime, onTimeChange: (LocalTime) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        StepperButton(symbol = "–", onClick = { onTimeChange(time.minusHours(1)) })
-        Text(
+        SwipeableNumber(
             text = displayHour.toString(),
-            style = MaterialTheme.typography.titleMedium,
-            color = CreamText,
+            onSwipeUp = { onTimeChange(time.plusHours(1)) },
+            onSwipeDown = { onTimeChange(time.minusHours(1)) },
         )
-        StepperButton(symbol = "+", onClick = { onTimeChange(time.plusHours(1)) })
-
-        Text(text = ":", style = MaterialTheme.typography.titleMedium, color = CreamText)
-
-        StepperButton(symbol = "–", onClick = { onTimeChange(time.minusMinutes(5)) })
-        Text(
+        Text(text = ":", style = MaterialTheme.typography.titleMedium, color = SlateText)
+        SwipeableNumber(
             text = "%02d".format(time.minute),
-            style = MaterialTheme.typography.titleMedium,
-            color = CreamText,
+            onSwipeUp = { onTimeChange(time.plusMinutes(15)) },
+            onSwipeDown = { onTimeChange(time.minusMinutes(15)) },
         )
-        StepperButton(symbol = "+", onClick = { onTimeChange(time.plusMinutes(5)) })
-
         AmPmToggle(isPm = isPm, onToggle = { onTimeChange(if (isPm) time.minusHours(12) else time.plusHours(12)) })
+    }
+}
+
+@Composable
+private fun SwipeableNumber(text: String, onSwipeUp: () -> Unit, onSwipeDown: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .background(CoralAccent.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+            .width(40.dp)
+            .height(44.dp)
+            .pointerInput(Unit) {
+                var accumulated = 0f
+                detectVerticalDragGestures(onDragEnd = { accumulated = 0f }) { change, dragAmount ->
+                    change.consume()
+                    accumulated += dragAmount
+                    while (accumulated <= -DragPxPerStep) {
+                        onSwipeUp()
+                        accumulated += DragPxPerStep
+                    }
+                    while (accumulated >= DragPxPerStep) {
+                        onSwipeDown()
+                        accumulated -= DragPxPerStep
+                    }
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = text, style = MaterialTheme.typography.titleMedium, color = SlateText)
     }
 }
 

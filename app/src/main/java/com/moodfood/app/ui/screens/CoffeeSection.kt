@@ -48,7 +48,7 @@ fun CoffeeSection() {
     val entries = remember { mutableStateOf(listOf<CoffeeEntry>()) }
     var nextId by remember { mutableStateOf(0L) }
 
-    var draftTime by remember { mutableStateOf(LocalTime.now()) }
+    var draftTime by remember { mutableStateOf(LocalTime.of(9, 30)) }
     var draftShotCount by remember { mutableStateOf(1) }
     var draftNote by remember { mutableStateOf("") }
 

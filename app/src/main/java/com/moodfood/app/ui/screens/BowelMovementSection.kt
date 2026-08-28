@@ -60,7 +60,7 @@ fun BowelMovementSection() {
     val entries = remember { mutableStateOf(listOf<BowelMovementEntry>()) }
     var nextId by remember { mutableStateOf(0L) }
 
-    var draftTime by remember { mutableStateOf(LocalTime.now()) }
+    var draftTime by remember { mutableStateOf(LocalTime.of(11, 0)) }
     var draftBristolType by remember { mutableStateOf(4) }
     var draftNote by remember { mutableStateOf("") }
 
