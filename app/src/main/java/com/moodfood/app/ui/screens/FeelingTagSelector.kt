@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.moodfood.app.ui.theme.CoralAccent
 import com.moodfood.app.ui.theme.CreamText
+import com.moodfood.app.ui.theme.SlateText
 import com.moodfood.app.ui.theme.SlotPill
 
 /** Shared feeling-tag scale used by Movement and Social - how something felt, not a performance metric. */
@@ -30,7 +31,7 @@ fun FeelingTagSelector(selected: FeelingTag?, onSelect: (FeelingTag?) -> Unit) {
             Text(
                 text = option.label,
                 style = MaterialTheme.typography.labelLarge,
-                color = CreamText,
+                color = if (selected == option) SlateText else CreamText,
                 modifier = Modifier
                     .background(
                         if (selected == option) CoralAccent else SlotPill,

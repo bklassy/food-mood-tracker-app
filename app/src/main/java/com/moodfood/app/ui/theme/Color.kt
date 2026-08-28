@@ -2,30 +2,31 @@ package com.moodfood.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Base palette: varied cottage-core (terracotta/sage/mustard/periwinkle
-// against a deep navy night, not the earlier all-brown version). Names are
+// Base palette: sampled directly from background_image.png (the lantern/
+// night-sky artwork) so the UI's core accents tie to the actual background
+// now behind everything, rather than a hand-picked scheme. Names are
 // historical (kept from the original teal/pink mockup) but every value below
 // is the current one - keeping names stable avoids touching every screen
 // file for a re-skin. Always dark-base by design - this app never follows
 // system light mode.
-val TealBackground = Color(0xFF2C3E4A)
-val TealBackgroundDeep = Color(0xFF1F2C35)
+val TealBackground = Color(0xFF0A1B2E) // lifted slightly off the image's darkest sampled pixel
+val TealBackgroundDeep = Color(0xFF030D20) // the image's actual darkest sampled pixel
 
 val BlushPink = Color(0xFFF3EFE3)
 val BlushPinkDim = Color(0xFFE8DFC8)
 
-val CoralAccent = Color(0xFFE8604A)
-val CoralAccentDeep = Color(0xFFA0462B)
+val CoralAccent = Color(0xFFF0B24C) // lantern glow gold, sampled from the brightest warm pixels
+val CoralAccentDeep = Color(0xFFCC8F3A) // deeper amber, sampled lantern-body tone
 
-val SlotPill = Color(0xFF93A374)
-val SlotPillPressed = Color(0xFF7D8C4C)
+val SlotPill = Color(0xFF3D6B82) // steel night-sky blue, replacing the old sage green
+val SlotPillPressed = Color(0xFF2A4E60)
 
 val CreamText = Color(0xFFF6F1E4)
 val SlateText = Color(0xFF2C2620)
 val SlatePlaceholder = Color(0xFF8A7F6E)
 
 // Cycle phase accents, tuned to sit against TealBackground / BlushPink.
-val PhaseMenstrual = CoralAccentDeep // rust
+val PhaseMenstrual = CoralAccentDeep // amber
 val PhaseFollicular = Color(0xFF4F9C8C) // muted turquoise
 val PhaseOvulation = Color(0xFFE0B04A) // mustard
 val PhaseLuteal = Color(0xFF8CA1C7) // periwinkle

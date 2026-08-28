@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.moodfood.app.ui.theme.CoralAccent
 import com.moodfood.app.ui.theme.CreamText
+import com.moodfood.app.ui.theme.SlateText
 import com.moodfood.app.ui.theme.SlotPill
 
 /**
@@ -38,6 +39,10 @@ fun StepperButton(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = symbol, color = CreamText, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = symbol,
+            color = if (highlighted) SlateText else CreamText,
+            style = MaterialTheme.typography.titleMedium,
+        )
     }
 }

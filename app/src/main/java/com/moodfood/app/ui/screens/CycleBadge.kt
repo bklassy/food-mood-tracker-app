@@ -98,7 +98,7 @@ fun CycleBadge(modifier: Modifier = Modifier) {
         else -> "Day $cycleDay+ of your cycle"
     }
     val badgeColor = phase?.color ?: CoralAccent
-    val badgeTextColor = phase?.textColor ?: CreamText
+    val badgeTextColor = phase?.textColor ?: SlateText
 
     Text(
         text = badgeText,
