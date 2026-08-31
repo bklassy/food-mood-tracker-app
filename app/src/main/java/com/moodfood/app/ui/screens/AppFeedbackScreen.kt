@@ -1,10 +1,10 @@
 package com.moodfood.app.ui.screens
 
+import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -18,66 +18,42 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.moodfood.app.data.CsvExporter
 import com.moodfood.app.data.Repository
 import com.moodfood.app.ui.theme.CoralAccent
+import com.moodfood.app.ui.theme.SlatePlaceholder
 import kotlinx.coroutines.launch
 
 /**
- * Two personal, bulleted lists stacked on one page - grounding/polyvagal
- * tools on top, favorite exercises/movement ideas below - each getting half
- * the screen and scrolling independently rather than one long shared scroll.
- * Swipe left from Journal to reach this.
+ * A running, bulleted list of app feedback/ideas - a place to jot things as
+ * they come up without leaving the app. Swipe to reach this.
  */
 @Composable
-fun MentalHealthToolsScreen() {
-    Column(modifier = Modifier.fillMaxSize().imePadding()) {
-        BulletedListSection(
-            modifier = Modifier.weight(1f),
-            title = "Mental Health Tools",
-            placeholder = "A running list of grounding tools, coping skills, reminders...",
-            load = Repository::loadMentalHealthTools,
-            save = Repository::saveMentalHealthTools,
-        )
-        BulletedListSection(
-            modifier = Modifier.weight(1f),
-            title = "Favorite Exercises",
-            placeholder = "A running list of exercises and movement ideas you love...",
-            load = Repository::loadFavoriteExercises,
-            save = Repository::saveFavoriteExercises,
-        )
-    }
-}
-
-@Composable
-private fun BulletedListSection(
-    modifier: Modifier,
-    title: String,
-    placeholder: String,
-    load: suspend () -> String,
-    save: suspend (String) -> Unit,
-) {
+fun AppFeedbackScreen() {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var content by remember { mutableStateOf(TextFieldValue("")) }
     var isLoaded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        val loaded = load()
+        val loaded = Repository.loadAppFeedback()
         content = TextFieldValue(loaded, TextRange(loaded.length))
         isLoaded = true
     }
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
-            text = title,
+            text = "App Feedback",
             style = MaterialTheme.typography.titleLarge,
             color = CoralAccent,
         )
@@ -91,10 +67,34 @@ private fun BulletedListSection(
                 value = content,
                 onValueChange = {
                     content = it
-                    coroutineScope.launch { save(it.text) }
+                    coroutineScope.launch { Repository.saveAppFeedback(it.text) }
                 },
-                placeholder = placeholder,
+                placeholder = "Bugs, ideas, things that feel off - jot them here...",
             )
         }
+
+        Text(
+            text = "Export CSV",
+            style = MaterialTheme.typography.titleLarge,
+            color = CoralAccent,
+        )
+        Text(
+            text = "Sends every logged table (journal, food, caffeine, alcohol, poo, " +
+                "movement, social, symptoms) as separate CSV files - pick Drive, email, " +
+                "or a file manager, then import each one into Sheets.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = SlatePlaceholder,
+        )
+        Text(
+            text = "+ Export",
+            style = MaterialTheme.typography.labelLarge,
+            color = CoralAccent,
+            modifier = Modifier.clickable {
+                coroutineScope.launch {
+                    val shareIntent = CsvExporter.exportAll(context)
+                    context.startActivity(Intent.createChooser(shareIntent, "Export Mood & Food data"))
+                }
+            },
+        )
     }
 }

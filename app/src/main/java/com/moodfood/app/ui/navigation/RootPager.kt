@@ -1,5 +1,7 @@
 package com.moodfood.app.ui.navigation
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -12,13 +14,20 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.moodfood.app.R
+import com.moodfood.app.ui.screens.AppFeedbackScreen
 import com.moodfood.app.ui.screens.FavoriteFoodsScreen
 import com.moodfood.app.ui.screens.JournalScreen
 import com.moodfood.app.ui.screens.MentalHealthToolsScreen
@@ -28,6 +37,7 @@ private enum class RootPage {
     MentalHealthTools,
     Journal,
     FavoriteFoods,
+    AppFeedback,
 }
 
 private val pages = RootPage.values().toList()
@@ -41,7 +51,17 @@ fun RootPager() {
         pageCount = { pages.size },
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    // Fades the whole app in slowly on launch, as a small nudge to slow down
+    // rather than rushing straight into logging.
+    var settled by remember { mutableStateOf(false) }
+    val alpha by animateFloatAsState(
+        targetValue = if (settled) 1f else 0f,
+        animationSpec = tween(durationMillis = 3000),
+        label = "appFadeIn",
+    )
+    LaunchedEffect(Unit) { settled = true }
+
+    Box(modifier = Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha }) {
         // Background + scrim deliberately ignore system bar insets, so the
         // image runs edge-to-edge behind the status bar and gesture nav area
         // instead of stopping at a flat painted strip there.
@@ -74,6 +94,7 @@ fun RootPager() {
                     RootPage.MentalHealthTools -> MentalHealthToolsScreen()
                     RootPage.Journal -> JournalScreen()
                     RootPage.FavoriteFoods -> FavoriteFoodsScreen()
+                    RootPage.AppFeedback -> AppFeedbackScreen()
                 }
             }
         }

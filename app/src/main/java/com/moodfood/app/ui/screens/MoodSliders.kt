@@ -29,19 +29,29 @@ private const val ScaleMax = 5f
 private const val ScaleSteps = 4 // discrete positions between the endpoints -> 6 total values (0-5)
 
 @Composable
-fun EnergySlider(value: Int?, onValueChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+fun EnergySlider(value: Int?, onValueChange: (Int?) -> Unit, modifier: Modifier = Modifier) {
     LabeledSlider(
         label = "Energy",
         value = value,
-        valueLabel = { it.toString() },
+        valueLabel = ::energyLabel,
         initialValueOnReveal = 3,
         onValueChange = onValueChange,
         modifier = modifier,
     )
 }
 
+/** Label for the current Energy reading. Low value (left) = depleted, high value (right) = vibrant. */
+private fun energyLabel(value: Int): String = when (value) {
+    0 -> "Depleted"
+    1 -> "Low"
+    2 -> "Tired"
+    3 -> "Steady"
+    4 -> "Energized"
+    else -> "Vibrant"
+}
+
 @Composable
-fun HungerSlider(value: Int?, onValueChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+fun HungerSlider(value: Int?, onValueChange: (Int?) -> Unit, modifier: Modifier = Modifier) {
     LabeledSlider(
         label = "Hunger (before)",
         value = value,
@@ -53,7 +63,7 @@ fun HungerSlider(value: Int?, onValueChange: (Int) -> Unit, modifier: Modifier =
 }
 
 @Composable
-fun FullnessSlider(value: Int?, onValueChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+fun FullnessSlider(value: Int?, onValueChange: (Int?) -> Unit, modifier: Modifier = Modifier) {
     LabeledSlider(
         label = "Fullness (after)",
         value = value,
@@ -70,20 +80,26 @@ fun FullnessSlider(value: Int?, onValueChange: (Int) -> Unit, modifier: Modifier
  * intensity left-to-right, matching [fullnessLabel]'s direction.
  */
 private fun hungerLabel(value: Int): String = when (value) {
-    0, 1 -> "Not hungry"
-    2, 3 -> "Comfortably hungry"
+    0 -> "Full"
+    1 -> "Not hungry"
+    2 -> "Slightly hungry"
+    3 -> "Hungry"
+    4 -> "Very hungry"
     else -> "Starving"
 }
 
 /** Body-cue label for the current Fullness reading. */
 private fun fullnessLabel(value: Int): String = when (value) {
-    0, 1 -> "Still hungry"
-    2, 3 -> "Satisfied"
+    0 -> "Still hungry"
+    1 -> "Slightly full"
+    2 -> "Satisfied"
+    3 -> "Comfortably full"
+    4 -> "Very full"
     else -> "Uncomfortably full"
 }
 
 @Composable
-fun NervousSystemSlider(value: Int?, onValueChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+fun NervousSystemSlider(value: Int?, onValueChange: (Int?) -> Unit, modifier: Modifier = Modifier) {
     LabeledSlider(
         label = "Nervous System",
         value = value,
@@ -96,8 +112,11 @@ fun NervousSystemSlider(value: Int?, onValueChange: (Int) -> Unit, modifier: Mod
 
 /** Polyvagal-informed label for the current Nervous System reading. */
 private fun polyvagalLabel(value: Int): String = when (value) {
-    0, 1 -> "Shutdown"
-    2, 3 -> "Grounded"
+    0 -> "Shutdown"
+    1 -> "Withdrawn"
+    2 -> "Settling"
+    3 -> "Grounded"
+    4 -> "Alert"
     else -> "Activated"
 }
 
@@ -106,7 +125,8 @@ private fun polyvagalLabel(value: Int): String = when (value) {
  * "tap to set" track instead of a real Slider (Material3's Slider always has
  * to show a thumb somewhere, so there's no way to make it look truly empty).
  * Tapping it reveals a normal Slider starting at [initialValueOnReveal],
- * which you can then drag like usual.
+ * which you can then drag like usual. Once set, tapping the value label
+ * again clears it back to unset, for accidental taps.
  */
 @Composable
 private fun LabeledSlider(
@@ -114,7 +134,7 @@ private fun LabeledSlider(
     value: Int?,
     valueLabel: (Int) -> String,
     initialValueOnReveal: Int,
-    onValueChange: (Int) -> Unit,
+    onValueChange: (Int?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -127,6 +147,11 @@ private fun LabeledSlider(
                 text = value?.let(valueLabel) ?: "Not set",
                 style = MaterialTheme.typography.labelLarge,
                 color = if (value == null) SlatePlaceholder else CoralAccent,
+                modifier = if (value != null) {
+                    Modifier.clickable { onValueChange(null) }
+                } else {
+                    Modifier
+                },
             )
         }
         if (value == null) {

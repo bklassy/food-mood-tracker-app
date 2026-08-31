@@ -1,7 +1,7 @@
 package com.moodfood.app.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,6 +20,7 @@ import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -50,22 +51,25 @@ private data class CoffeeEntry(
 private val coffeeTimeFormatter = DateTimeFormatter.ofPattern("h:mm a")
 
 /**
- * Coffee log: multiple timestamped entries per day, each with a shot count
- * + note. Collapsible like the time slots/Alcohol - tap the header to reveal
- * the log list plus an inline add-entry card (no popup dialog, but the
- * Material3 TimePicker embedded directly in the card - the custom
- * swipe-to-change control it replaced wasn't reliable enough). Persisted to
- * the local Turso/libSQL database, scoped to today's date.
+ * Caffeine log: multiple timestamped entries per day (coffee, matcha, soda -
+ * whatever the source), each with a serving count + note. Collapsible like
+ * the time slots/Alcohol - tap the header to reveal the log list plus an
+ * inline add-entry card (no popup dialog, but the Material3 TimePicker
+ * embedded directly in the card - the custom swipe-to-change control it
+ * replaced wasn't reliable enough). Persisted to the local Turso/libSQL
+ * database, scoped to today's date.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CoffeeSection() {
-    val today = remember { todayKey() }
+fun CoffeeSection(today: String) {
     val coroutineScope = rememberCoroutineScope()
     var expanded by rememberSaveable { mutableStateOf(false) }
+    var showAddForm by rememberSaveable { mutableStateOf(false) }
+    var editingEntryId by rememberSaveable { mutableStateOf<String?>(null) }
     var entries by remember { mutableStateOf(listOf<CoffeeEntry>()) }
 
-    val timeState = rememberTimePickerState(initialHour = 9, initialMinute = 30, is24Hour = false)
+    var draftInitialHour by remember { mutableStateOf(9) }
+    var draftInitialMinute by remember { mutableStateOf(30) }
     var draftShotCount by remember { mutableStateOf(1) }
     var draftNote by remember { mutableStateOf("") }
 
@@ -80,84 +84,145 @@ fun CoffeeSection() {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = "☕ Coffee  ${if (expanded) "▾" else "▸"}",
+            text = "☕ Caffeine  ${if (expanded) "▾" else "▸"}",
             style = MaterialTheme.typography.titleMedium,
-            color = SlateText,
+            color = CreamText,
             modifier = Modifier
                 .align(Alignment.End)
-                .background(SectionCoffee, RoundedCornerShape(12.dp))
+                .border(1.dp, SectionCoffee, RoundedCornerShape(6.dp))
                 .clickable { expanded = !expanded }
                 .padding(horizontal = 14.dp, vertical = 6.dp),
         )
 
         AnimatedVisibility(visible = expanded) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 entries.sortedByDescending { it.time }.forEach { entry ->
                     CoffeeRow(
                         entry = entry,
+                        onEdit = {
+                            draftInitialHour = entry.time.hour
+                            draftInitialMinute = entry.time.minute
+                            draftShotCount = entry.shotCount
+                            draftNote = entry.note
+                            editingEntryId = entry.id
+                            showAddForm = true
+                        },
                         onDelete = {
                             entries = entries.filter { it.id != entry.id }
                             coroutineScope.launch { Repository.deleteCoffeeEntry(entry.id) }
+                            if (editingEntryId == entry.id) {
+                                editingEntryId = null
+                                showAddForm = false
+                            }
                         },
                     )
                 }
 
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = BlushPink),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        HalfScale {
-                            TimePicker(
-                                state = timeState,
-                                colors = TimePickerDefaults.colors(
-                                    clockDialColor = TealBackgroundDeep,
-                                    clockDialSelectedContentColor = CreamText,
-                                    clockDialUnselectedContentColor = CreamText,
-                                ),
-                            )
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                if (showAddForm) {
+                    // Re-keyed on editingEntryId so the TimePicker gets a fresh
+                    // TimePickerState (and thus a new initial hour/minute) each
+                    // time a different entry - or a brand new one - is opened;
+                    // TimePickerState.hour/minute aren't settable after creation.
+                    key(editingEntryId) {
+                        val timeState = rememberTimePickerState(
+                            initialHour = draftInitialHour,
+                            initialMinute = draftInitialMinute,
+                            is24Hour = false,
+                        )
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = BlushPink),
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            StepperButton(symbol = "–", onClick = { if (draftShotCount > 0) draftShotCount-- })
-                            Text(
-                                text = draftShotCount.toString(),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = CoralAccent,
-                            )
-                            StepperButton(symbol = "+", onClick = { draftShotCount++ })
-                            Text(
-                                text = if (draftShotCount == 1) "espresso shot" else "espresso shots",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = SlateText,
-                            )
-                        }
-                        PinkNoteField(
-                            value = draftNote,
-                            onValueChange = { draftNote = it },
-                            placeholder = "Note (optional)",
-                        )
-                        Text(
-                            text = "+ Add",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = CoralAccent,
-                            modifier = Modifier.clickable {
-                                val time = LocalTime.of(timeState.hour, timeState.minute)
-                                val shotCount = draftShotCount
-                                val note = draftNote
-                                coroutineScope.launch {
-                                    val id = Repository.addCoffeeEntry(today, time.toString(), shotCount, note)
-                                    entries = entries + CoffeeEntry(id, time, shotCount, note)
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                    Text(
+                                        text = "✕",
+                                        color = SlatePlaceholder,
+                                        modifier = Modifier
+                                            .clickable {
+                                                showAddForm = false
+                                                editingEntryId = null
+                                                draftNote = ""
+                                            }
+                                            .padding(4.dp),
+                                    )
                                 }
-                                draftNote = ""
-                            },
-                        )
+                                HalfScale(modifier = Modifier.align(Alignment.CenterHorizontally), scale = 0.65f) {
+                                    TimePicker(
+                                        state = timeState,
+                                        colors = TimePickerDefaults.colors(
+                                            clockDialColor = TealBackgroundDeep,
+                                            clockDialSelectedContentColor = CreamText,
+                                            clockDialUnselectedContentColor = CreamText,
+                                        ),
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    StepperButton(symbol = "–", onClick = { if (draftShotCount > 0) draftShotCount-- })
+                                    Text(
+                                        text = draftShotCount.toString(),
+                                        style = MaterialTheme.typography.titleLarge,
+                                        color = CoralAccent,
+                                    )
+                                    StepperButton(symbol = "+", onClick = { draftShotCount++ })
+                                    Text(
+                                        text = if (draftShotCount == 1) "serving" else "servings",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = SlateText,
+                                    )
+                                }
+                                PinkNoteField(
+                                    value = draftNote,
+                                    onValueChange = { draftNote = it },
+                                    placeholder = "Note (optional)",
+                                )
+                                Text(
+                                    text = if (editingEntryId != null) "Save" else "+ Add",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = CoralAccent,
+                                    modifier = Modifier.align(Alignment.CenterHorizontally).clickable {
+                                        val time = LocalTime.of(timeState.hour, timeState.minute)
+                                        val shotCount = draftShotCount
+                                        val note = draftNote
+                                        val id = editingEntryId
+                                        coroutineScope.launch {
+                                            if (id != null) {
+                                                Repository.updateCoffeeEntry(id, time.toString(), shotCount, note)
+                                                entries = entries.map {
+                                                    if (it.id == id) CoffeeEntry(id, time, shotCount, note) else it
+                                                }
+                                            } else {
+                                                val newId = Repository.addCoffeeEntry(today, time.toString(), shotCount, note)
+                                                entries = entries + CoffeeEntry(newId, time, shotCount, note)
+                                            }
+                                        }
+                                        draftNote = ""
+                                        showAddForm = false
+                                        editingEntryId = null
+                                    },
+                                )
+                            }
+                        }
                     }
+                } else {
+                    Text(
+                        text = "+ Add caffeine",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = CoralAccent,
+                        modifier = Modifier.align(Alignment.End).clickable {
+                            editingEntryId = null
+                            draftInitialHour = 9
+                            draftInitialMinute = 30
+                            showAddForm = true
+                        },
+                    )
                 }
             }
         }
@@ -165,10 +230,12 @@ fun CoffeeSection() {
 }
 
 @Composable
-private fun CoffeeRow(entry: CoffeeEntry, onDelete: () -> Unit) {
+private fun CoffeeRow(entry: CoffeeEntry, onEdit: () -> Unit, onDelete: () -> Unit) {
     Card(
         colors = CardDefaults.cardColors(containerColor = BlushPink),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onEdit),
     ) {
         Row(
             modifier = Modifier
@@ -183,7 +250,7 @@ private fun CoffeeRow(entry: CoffeeEntry, onDelete: () -> Unit) {
                 color = SlateText,
             )
             Text(
-                text = if (entry.shotCount == 1) "1 shot" else "${entry.shotCount} shots",
+                text = if (entry.shotCount == 1) "1 serving" else "${entry.shotCount} servings",
                 style = MaterialTheme.typography.labelLarge,
                 color = CoralAccent,
             )

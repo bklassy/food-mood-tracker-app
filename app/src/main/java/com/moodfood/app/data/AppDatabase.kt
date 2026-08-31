@@ -1,14 +1,22 @@
 package com.moodfood.app.data
 
 import android.content.Context
+import android.util.Log
+import kotlinx.coroutines.sync.Mutex
 import tech.turso.libsql.Database
 import tech.turso.libsql.Libsql
 
+private const val TAG = "AppDatabase"
+
 /**
- * Local-only libSQL database for now. Turso's Android SDK is in technical
- * preview and this app only needs offline storage today - cloud sync
- * (pointing this at a Turso Cloud URL + auth token as an embedded replica)
- * is a later phase, not wired up yet.
+ * Local-only libSQL database. Turso's Android SDK was tried for cloud sync
+ * (embedded replica mode) but hit a native SIGSEGV inside the SDK's own
+ * query-routing code on ordinary reads - a real crash in the only version
+ * published (0.1.2, Maven Central's latest), not something fixable from
+ * here. Backed out; this stays local-only until that SDK is more stable.
+ *
+ * [dbMutex] lives here rather than in Repository because it protects the
+ * single shared [db] connection from any concurrent access.
  *
  * Initialized once from MainActivity.onCreate via [init]; every screen reads
  * [db] through this singleton rather than prop-drilling a Database instance
@@ -18,41 +26,52 @@ object AppDatabase {
     lateinit var db: Database
         private set
 
+    val dbMutex = Mutex()
+
     fun init(context: Context) {
         if (::db.isInitialized) return
+
         db = Libsql.open(context.filesDir.path + "/moodfood.db")
+
         db.connect().use { conn ->
             // One-time schema migrations, tracked via SQLite's built-in
             // user_version pragma. SQLite has no ALTER COLUMN, so loosening
             // a NOT NULL constraint means rename-recreate-copy-drop rather
-            // than editing the column in place.
-            val version = conn.query("PRAGMA user_version").use { rows ->
-                rows.map { row -> row[0] as Long }
-            }.firstOrNull() ?: 0L
+            // than editing the column in place. Wrapped in try/catch so an
+            // unexpected failure here can't crash the whole app at launch -
+            // worst case this migration is silently skipped and retried
+            // next launch, rather than the app becoming unopenable.
+            try {
+                val version = conn.query("PRAGMA user_version").use { rows ->
+                    rows.map { row -> row[0] as Long }
+                }.firstOrNull() ?: 0L
 
-            if (version < 1) {
-                val daySlotsExists = conn.query(
-                    "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'day_slots'",
-                ).use { rows -> rows.map { it[0] as String } }.isNotEmpty()
+                if (version < 1) {
+                    val daySlotsExists = conn.query(
+                        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'day_slots'",
+                    ).use { rows -> rows.map { it[0] as String } }.isNotEmpty()
 
-                if (daySlotsExists) {
-                    // hunger/fullness/energy/nervous_system were NOT NULL
-                    // with a default; they need to accept NULL now so "not
-                    // logged yet" can be told apart from an actual value,
-                    // instead of every slider silently pre-filling with a
-                    // fake reading.
-                    conn.execute("ALTER TABLE day_slots RENAME TO day_slots_v0")
-                    conn.execute(DAY_SLOTS_TABLE_SQL)
-                    conn.execute(
-                        """
-                        INSERT INTO day_slots (date, slot, hunger, fullness, energy, nervous_system, food_note)
-                        SELECT date, slot, hunger, fullness, energy, nervous_system, food_note FROM day_slots_v0
-                        """,
-                    )
-                    conn.execute("DROP TABLE day_slots_v0")
+                    if (daySlotsExists) {
+                        // hunger/fullness/energy/nervous_system were NOT NULL
+                        // with a default; they need to accept NULL now so "not
+                        // logged yet" can be told apart from an actual value,
+                        // instead of every slider silently pre-filling with a
+                        // fake reading.
+                        conn.execute("ALTER TABLE day_slots RENAME TO day_slots_v0")
+                        conn.execute(DAY_SLOTS_TABLE_SQL)
+                        conn.execute(
+                            """
+                            INSERT INTO day_slots (date, slot, hunger, fullness, energy, nervous_system, food_note)
+                            SELECT date, slot, hunger, fullness, energy, nervous_system, food_note FROM day_slots_v0
+                            """,
+                        )
+                        conn.execute("DROP TABLE day_slots_v0")
+                    }
+
+                    conn.execute("PRAGMA user_version = 1")
                 }
-
-                conn.execute("PRAGMA user_version = 1")
+            } catch (e: Exception) {
+                Log.e(TAG, "day_slots migration failed, will retry next launch", e)
             }
 
             for (statement in SCHEMA_STATEMENTS) {
@@ -148,6 +167,18 @@ private val SCHEMA_STATEMENTS = listOf(
     """,
     """
     CREATE TABLE IF NOT EXISTS mental_health_tools (
+        id INTEGER PRIMARY KEY CHECK (id = 0),
+        content TEXT NOT NULL DEFAULT ''
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS favorite_exercises (
+        id INTEGER PRIMARY KEY CHECK (id = 0),
+        content TEXT NOT NULL DEFAULT ''
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS app_feedback (
         id INTEGER PRIMARY KEY CHECK (id = 0),
         content TEXT NOT NULL DEFAULT ''
     )

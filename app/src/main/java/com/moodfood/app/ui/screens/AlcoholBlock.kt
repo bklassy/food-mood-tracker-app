@@ -1,7 +1,7 @@
 package com.moodfood.app.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -30,8 +29,7 @@ import kotlinx.coroutines.launch
 
 /** One entry per day: a drink-count stepper plus a free-text note. Collapsible, like the time slots. */
 @Composable
-fun AlcoholBlock() {
-    val today = remember { todayKey() }
+fun AlcoholBlock(today: String) {
     val coroutineScope = rememberCoroutineScope()
     var drinkCount by rememberSaveable { mutableStateOf(0) }
     var note by rememberSaveable { mutableStateOf("") }
@@ -57,7 +55,7 @@ fun AlcoholBlock() {
             color = CreamText,
             modifier = Modifier
                 .align(Alignment.End)
-                .background(SectionAlcohol, RoundedCornerShape(12.dp))
+                .border(1.dp, SectionAlcohol, RoundedCornerShape(6.dp))
                 .clickable { expanded = !expanded }
                 .padding(horizontal = 14.dp, vertical = 6.dp),
         )

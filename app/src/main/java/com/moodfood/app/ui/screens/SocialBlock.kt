@@ -1,7 +1,7 @@
 package com.moodfood.app.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -22,8 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.moodfood.app.data.Repository
+import com.moodfood.app.ui.theme.CreamText
 import com.moodfood.app.ui.theme.SectionSocial
-import com.moodfood.app.ui.theme.SlateText
 import kotlinx.coroutines.launch
 
 /**
@@ -32,8 +31,7 @@ import kotlinx.coroutines.launch
  * Persisted to the local Turso/libSQL database, scoped to today's date.
  */
 @Composable
-fun SocialBlock() {
-    val today = remember { todayKey() }
+fun SocialBlock(today: String) {
     val coroutineScope = rememberCoroutineScope()
     var expanded by rememberSaveable { mutableStateOf(false) }
     var note by rememberSaveable { mutableStateOf("") }
@@ -56,10 +54,10 @@ fun SocialBlock() {
         Text(
             text = "🫂 Social  ${if (expanded) "▾" else "▸"}",
             style = MaterialTheme.typography.titleMedium,
-            color = SlateText,
+            color = CreamText,
             modifier = Modifier
                 .align(Alignment.End)
-                .background(SectionSocial, RoundedCornerShape(12.dp))
+                .border(1.dp, SectionSocial, RoundedCornerShape(6.dp))
                 .clickable { expanded = !expanded }
                 .padding(horizontal = 14.dp, vertical = 6.dp),
         )

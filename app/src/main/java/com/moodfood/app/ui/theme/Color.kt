@@ -32,20 +32,24 @@ val PhaseOvulation = Color(0xFFE0B04A) // mustard
 val PhaseLuteal = Color(0xFF8CA1C7) // periwinkle
 
 // Time-of-day accents for the Journal screen's slot pills, progressing
-// through a day's light: dusky navy pre-dawn -> mustard morning -> aqua
-// midday -> burnt-orange afternoon -> watermelon sunset -> pine-green night.
-val TimeTwilight = Color(0xFF34495E)
-val TimeMorning = Color(0xFFE0B04A)
-val TimeNoon = Color(0xFFA9CFCF)
-val TimeAfternoon = Color(0xFFC96A28)
-val TimeEvening = Color(0xFFE2779B)
-val TimeLateEvening = Color(0xFF2F5D48)
+// through a day's light: dusky navy pre-dawn -> muted gold morning -> dusty
+// teal midday -> clay afternoon -> muted mauve sunset -> deep pine night.
+// Each is the original hue blended ~30% toward TealBackground, so the whole
+// set reads as one dim, dusty family pulled from the night-sky/lantern
+// artwork rather than a rainbow of separate saturated colors.
+val TimeTwilight = Color(0xFF273B50) // dusty navy
+val TimeMorning = Color(0xFFA08342) // muted gold
+val TimeNoon = Color(0xFF719097) // dusty teal
+val TimeAfternoon = Color(0xFF90522A) // clay
+val TimeEvening = Color(0xFFA15B7A) // muted mauve
+val TimeLateEvening = Color(0xFF244940) // deep pine
 
-// One accent per day-log section, so Coffee/Alcohol/Poo/Movement/Social/
-// Symptoms each read as their own thing rather than blurring together.
-val SectionCoffee = Color(0xFFC8975A) // camel
-val SectionAlcohol = Color(0xFFB85C6B) // muted rose
-val SectionPoo = Color(0xFF7D8C4C) // olive green
-val SectionMovement = Color(0xFF2F5D48) // pine green
-val SectionSocial = Color(0xFF8CA1C7) // periwinkle
-val SectionSymptoms = Color(0xFFB5603F) // terracotta
+// One accent per day-log section, so Caffeine/Alcohol/Poo/Movement/Social/
+// Symptoms each read as their own thing rather than blurring together -
+// same blended-toward-TealBackground treatment as the time-of-day pills.
+val SectionCoffee = Color(0xFF8F724D) // muted caramel
+val SectionAlcohol = Color(0xFF844959) // dusty wine
+val SectionPoo = Color(0xFF5B6A43) // muted moss
+val SectionMovement = Color(0xFF4E6C50) // muted sage (distinct from LateEvening's pine)
+val SectionSocial = Color(0xFF657999) // dusty slate-blue
+val SectionSymptoms = Color(0xFF824B3A) // muted clay

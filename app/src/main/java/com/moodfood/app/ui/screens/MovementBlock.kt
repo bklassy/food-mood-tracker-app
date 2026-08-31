@@ -1,7 +1,7 @@
 package com.moodfood.app.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -33,8 +32,7 @@ import kotlinx.coroutines.launch
  * database, scoped to today's date.
  */
 @Composable
-fun MovementBlock() {
-    val today = remember { todayKey() }
+fun MovementBlock(today: String) {
     val coroutineScope = rememberCoroutineScope()
     var expanded by rememberSaveable { mutableStateOf(false) }
     var movementType by rememberSaveable { mutableStateOf("") }
@@ -62,7 +60,7 @@ fun MovementBlock() {
             color = CreamText,
             modifier = Modifier
                 .align(Alignment.End)
-                .background(SectionMovement, RoundedCornerShape(12.dp))
+                .border(1.dp, SectionMovement, RoundedCornerShape(6.dp))
                 .clickable { expanded = !expanded }
                 .padding(horizontal = 14.dp, vertical = 6.dp),
         )

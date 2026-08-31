@@ -3,10 +3,12 @@ package com.moodfood.app.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -28,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,6 +43,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,9 +61,9 @@ import com.moodfood.app.ui.theme.TimeNoon
 import com.moodfood.app.ui.theme.TimeTwilight
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
-/** Every screen persists against "today" - there's no history/day-navigation UI yet. */
-internal fun todayKey(): String = LocalDate.now().toString()
+private val DateNavLabelFormatter = DateTimeFormatter.ofPattern("EEE, MMM d")
 
 /**
  * Time slots a day's food/energy/nervous-system readings are logged against.
@@ -70,14 +74,13 @@ private enum class TimeSlot(
     val label: String,
     val placeholder: String,
     val pillColor: Color,
-    val pillTextColor: Color,
 ) {
-    Twilight("Twilight", "Any insomnia meals or snacks? Did they feel satisfying?", TimeTwilight, CreamText),
-    Morning("Morning", "What sounded good this morning? How satisfying was it?", TimeMorning, SlateText),
-    Noon("Noon", "What was lunch like — satisfying, rushed, something else?", TimeNoon, SlateText),
-    Afternoon("Afternoon", "Any afternoon bites? Were they what you wanted?", TimeAfternoon, CreamText),
-    Evening("Evening", "What was dinner like? Did it hit the spot?", TimeEvening, SlateText),
-    LateEvening("Late Evening", "Anything after dinner? How did it feel?", TimeLateEvening, CreamText),
+    Twilight("Twilight", "Any insomnia meals or snacks? Did they feel satisfying?", TimeTwilight),
+    Morning("Morning", "What sounded good this morning? How satisfying was it?", TimeMorning),
+    Noon("Noon", "What was lunch like — satisfying, rushed, something else?", TimeNoon),
+    Afternoon("Afternoon", "Any afternoon bites? Were they what you wanted?", TimeAfternoon),
+    Evening("Evening", "What was dinner like? Did it hit the spot?", TimeEvening),
+    LateEvening("Late Evening", "Anything after dinner? How did it feel?", TimeLateEvening),
 }
 
 private val NoteFieldLineHeight = 22.sp
@@ -90,12 +93,18 @@ private const val NoteFieldMaxLines = 8
  */
 @Composable
 fun JournalScreen() {
-    val today = remember { todayKey() }
+    // Stored as an epoch day (a plain Long) rather than a LocalDate directly,
+    // since rememberSaveable needs no custom Saver for primitives.
+    var selectedEpochDay by rememberSaveable { mutableStateOf(LocalDate.now().toEpochDay()) }
+    val selectedDate = remember(selectedEpochDay) { LocalDate.ofEpochDay(selectedEpochDay) }
+    val isToday = selectedDate == LocalDate.now()
+    val today = selectedDate.toString()
+
     val coroutineScope = rememberCoroutineScope()
     var journalText by rememberSaveable { mutableStateOf("") }
     var gratitudeText by rememberSaveable { mutableStateOf("") }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(today) {
         val loaded = Repository.loadJournalEntry(today)
         journalText = loaded.journalText
         gratitudeText = loaded.gratitudeText
@@ -117,6 +126,17 @@ fun JournalScreen() {
                 text = "Mood & Food",
                 style = MaterialTheme.typography.headlineLarge,
                 color = CoralAccent,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
+        }
+
+        item {
+            DateNavRow(
+                selectedDate = selectedDate,
+                isToday = isToday,
+                onPrevious = { selectedEpochDay-- },
+                onNext = { if (!isToday) selectedEpochDay++ },
             )
         }
 
@@ -142,7 +162,7 @@ fun JournalScreen() {
         item {
             Text(
                 text = "Gratitude",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 color = CoralAccent,
             )
         }
@@ -162,35 +182,76 @@ fun JournalScreen() {
 
         item {
             Text(
-                text = "Food",
+                text = "Wellness",
                 style = MaterialTheme.typography.titleLarge,
                 color = CoralAccent,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End,
             )
         }
 
         items(TimeSlot.values().toList()) { slot ->
-            TimeSlotBlock(slot)
+            // Re-keyed on the selected date so each block's remembered state
+            // (drafts, expanded/collapsed, loaded entries) fully resets and
+            // reloads for the new day, rather than showing stale data from
+            // whatever day was selected before.
+            key(today) { TimeSlotBlock(slot, today) }
         }
 
-        item { CoffeeSection() }
+        item { key(today) { CoffeeSection(today) } }
 
-        item { AlcoholBlock() }
+        item { key(today) { AlcoholBlock(today) } }
 
-        item { BowelMovementSection() }
+        item { key(today) { BowelMovementSection(today) } }
 
-        item { MovementBlock() }
+        item { key(today) { MovementBlock(today) } }
 
-        item { SocialBlock() }
+        item { key(today) { SocialBlock(today) } }
 
-        item { SymptomsBlock() }
+        item { key(today) { SymptomsBlock(today) } }
 
         item { Spacer(modifier = Modifier.height(48.dp)) }
     }
 }
 
+/**
+ * Back/forward between days, capped at today - there's no logging into the
+ * future. The forward arrow is dimmed and inert once [isToday] is true.
+ */
 @Composable
-private fun TimeSlotBlock(slot: TimeSlot) {
-    val today = remember { todayKey() }
+private fun DateNavRow(selectedDate: LocalDate, isToday: Boolean, onPrevious: () -> Unit, onNext: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "◂",
+            style = MaterialTheme.typography.titleLarge,
+            color = CoralAccent,
+            modifier = Modifier
+                .clickable(onClick = onPrevious)
+                .padding(12.dp),
+        )
+        Text(
+            text = if (isToday) "Today" else selectedDate.format(DateNavLabelFormatter),
+            style = MaterialTheme.typography.labelLarge,
+            color = CreamText,
+            modifier = Modifier.padding(horizontal = 8.dp),
+        )
+        Text(
+            text = "▸",
+            style = MaterialTheme.typography.titleLarge,
+            color = if (isToday) SlatePlaceholder else CoralAccent,
+            modifier = Modifier
+                .then(if (isToday) Modifier else Modifier.clickable(onClick = onNext))
+                .padding(12.dp),
+        )
+    }
+}
+
+@Composable
+private fun TimeSlotBlock(slot: TimeSlot, today: String) {
     val coroutineScope = rememberCoroutineScope()
     var noteText by rememberSaveable { mutableStateOf("") }
     var hunger by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -221,10 +282,10 @@ private fun TimeSlotBlock(slot: TimeSlot) {
         Text(
             text = "${slot.label}  ${if (expanded) "▾" else "▸"}",
             style = MaterialTheme.typography.titleMedium,
-            color = slot.pillTextColor,
+            color = CreamText,
             modifier = Modifier
                 .align(Alignment.End)
-                .background(slot.pillColor, RoundedCornerShape(12.dp))
+                .border(1.dp, slot.pillColor, RoundedCornerShape(6.dp))
                 .clickable { expanded = !expanded }
                 .padding(horizontal = 14.dp, vertical = 6.dp),
         )

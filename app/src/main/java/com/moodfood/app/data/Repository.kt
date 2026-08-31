@@ -2,7 +2,6 @@ package com.moodfood.app.data
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -28,23 +27,23 @@ private const val TAG = "Repository"
 
 /**
  * All persistence for the app, keyed by an ISO date string (LocalDate.toString())
- * for "today" - there's no history/day-navigation UI yet, so every screen just
- * reads and writes today's row. Every call opens its own connection, matching
- * the pattern in Turso's own example app rather than holding one open long-term.
+ * for the selected day - Journal defaults to today but can navigate back to
+ * past days, reading/writing whichever date is selected. Every call opens
+ * its own connection, matching the pattern in Turso's own example app
+ * rather than holding one open long-term.
  *
  * Every operation goes through [dbRead]/[dbWrite], which serialize all DB
- * access through one [Mutex] and catch failures instead of propagating them:
- * typing quickly fires a save per keystroke from independent coroutines, and
- * without serializing them two writes can hit the local SQLite file at the
- * same time and throw "database is locked" - a real crash this app hit
- * before this existed. A single-user local file has no need for real
- * concurrency, so queuing everything through one lock is the simplest fix,
- * and catching failures means a rare write hiccup degrades quietly (that one
- * change might not persist) instead of taking the whole app down.
+ * access through [AppDatabase.dbMutex] and catch failures instead of
+ * propagating them: typing quickly fires a save per keystroke from
+ * independent coroutines, and without serializing them two writes can hit
+ * the local SQLite file at the same time and throw "database is locked" -
+ * a real crash this app hit before this existed. Catching failures means a
+ * rare write hiccup degrades quietly (that one change might not persist)
+ * instead of taking the whole app down.
  */
 object Repository {
     private val db get() = AppDatabase.db
-    private val dbMutex = Mutex()
+    private val dbMutex get() = AppDatabase.dbMutex
 
     private suspend fun <T> dbRead(default: T, block: () -> T): T = dbMutex.withLock {
         withContext(Dispatchers.IO) {
@@ -172,6 +171,15 @@ object Repository {
         return id
     }
 
+    suspend fun updateCoffeeEntry(id: String, time: String, shotCount: Int, note: String) = dbWrite {
+        db.connect().use { conn ->
+            conn.execute(
+                "UPDATE coffee_log SET time = ?, shot_count = ?, note = ? WHERE id = ?",
+                time, shotCount, note, id,
+            )
+        }
+    }
+
     suspend fun deleteCoffeeEntry(id: String) = dbWrite {
         db.connect().use { conn -> conn.execute("DELETE FROM coffee_log WHERE id = ?", id) }
     }
@@ -195,6 +203,15 @@ object Repository {
             }
         }
         return id
+    }
+
+    suspend fun updateBowelMovement(id: String, time: String, bristolType: Int, note: String) = dbWrite {
+        db.connect().use { conn ->
+            conn.execute(
+                "UPDATE bowel_movements SET time = ?, bristol_type = ?, note = ? WHERE id = ?",
+                time, bristolType, note, id,
+            )
+        }
     }
 
     suspend fun deleteBowelMovement(id: String) = dbWrite {
@@ -331,6 +348,159 @@ object Repository {
                 """,
                 content,
             )
+        }
+    }
+
+    suspend fun loadFavoriteExercises(): String = dbRead("") {
+        db.connect().use { conn ->
+            conn.query("SELECT content FROM favorite_exercises WHERE id = 0").use { rows ->
+                rows.map { row -> row[0] as String }
+            }.firstOrNull() ?: ""
+        }
+    }
+
+    suspend fun saveFavoriteExercises(content: String) = dbWrite {
+        db.connect().use { conn ->
+            conn.execute(
+                """
+                INSERT INTO favorite_exercises (id, content) VALUES (0, ?)
+                ON CONFLICT(id) DO UPDATE SET content = excluded.content
+                """,
+                content,
+            )
+        }
+    }
+
+    suspend fun loadAppFeedback(): String = dbRead("") {
+        db.connect().use { conn ->
+            conn.query("SELECT content FROM app_feedback WHERE id = 0").use { rows ->
+                rows.map { row -> row[0] as String }
+            }.firstOrNull() ?: ""
+        }
+    }
+
+    suspend fun saveAppFeedback(content: String) = dbWrite {
+        db.connect().use { conn ->
+            conn.execute(
+                """
+                INSERT INTO app_feedback (id, content) VALUES (0, ?)
+                ON CONFLICT(id) DO UPDATE SET content = excluded.content
+                """,
+                content,
+            )
+        }
+    }
+
+    // Below: one "load everything, every date" function per logged table,
+    // each returning its header row followed by every data row, for CSV
+    // export. Only the day-scoped tracking tables are included - the
+    // free-text lists (favorite foods, mental health tools, etc.) and cycle
+    // settings aren't the kind of thing you'd chart in a spreadsheet.
+
+    suspend fun loadAllJournalEntries(): List<List<String>> = dbRead(emptyList()) {
+        db.connect().use { conn ->
+            val rows = conn.query(
+                "SELECT date, journal_text, gratitude_text FROM journal_entries ORDER BY date",
+            ).use { result ->
+                result.map { row -> listOf(row[0] as String, row[1] as String, row[2] as String) }
+            }
+            listOf(listOf("date", "journal_text", "gratitude_text")) + rows
+        }
+    }
+
+    suspend fun loadAllDaySlots(): List<List<String>> = dbRead(emptyList()) {
+        db.connect().use { conn ->
+            val rows = conn.query(
+                """
+                SELECT date, slot, hunger, fullness, energy, nervous_system, food_note
+                FROM day_slots ORDER BY date, slot
+                """,
+            ).use { result ->
+                result.map { row ->
+                    listOf(
+                        row[0] as String,
+                        row[1] as String,
+                        (row[2] as Long?)?.toString() ?: "",
+                        (row[3] as Long?)?.toString() ?: "",
+                        (row[4] as Long?)?.toString() ?: "",
+                        (row[5] as Long?)?.toString() ?: "",
+                        row[6] as String,
+                    )
+                }
+            }
+            listOf(listOf("date", "slot", "hunger", "fullness", "energy", "nervous_system", "food_note")) + rows
+        }
+    }
+
+    suspend fun loadAllAlcohol(): List<List<String>> = dbRead(emptyList()) {
+        db.connect().use { conn ->
+            val rows = conn.query(
+                "SELECT date, drink_count, note FROM alcohol_log ORDER BY date",
+            ).use { result ->
+                result.map { row -> listOf(row[0] as String, (row[1] as Long).toString(), row[2] as String) }
+            }
+            listOf(listOf("date", "drink_count", "note")) + rows
+        }
+    }
+
+    suspend fun loadAllCoffeeEntries(): List<List<String>> = dbRead(emptyList()) {
+        db.connect().use { conn ->
+            val rows = conn.query(
+                "SELECT date, time, shot_count, note FROM coffee_log ORDER BY date, time",
+            ).use { result ->
+                result.map { row ->
+                    listOf(row[0] as String, row[1] as String, (row[2] as Long).toString(), row[3] as String)
+                }
+            }
+            listOf(listOf("date", "time", "shot_count", "note")) + rows
+        }
+    }
+
+    suspend fun loadAllBowelMovements(): List<List<String>> = dbRead(emptyList()) {
+        db.connect().use { conn ->
+            val rows = conn.query(
+                "SELECT date, time, bristol_type, note FROM bowel_movements ORDER BY date, time",
+            ).use { result ->
+                result.map { row ->
+                    listOf(row[0] as String, row[1] as String, (row[2] as Long).toString(), row[3] as String)
+                }
+            }
+            listOf(listOf("date", "time", "bristol_type", "note")) + rows
+        }
+    }
+
+    suspend fun loadAllMovement(): List<List<String>> = dbRead(emptyList()) {
+        db.connect().use { conn ->
+            val rows = conn.query(
+                "SELECT date, movement_type, feeling, note FROM movement_log ORDER BY date",
+            ).use { result ->
+                result.map { row ->
+                    listOf(row[0] as String, row[1] as String, row[2] as String? ?: "", row[3] as String)
+                }
+            }
+            listOf(listOf("date", "movement_type", "feeling", "note")) + rows
+        }
+    }
+
+    suspend fun loadAllSocial(): List<List<String>> = dbRead(emptyList()) {
+        db.connect().use { conn ->
+            val rows = conn.query(
+                "SELECT date, note, feeling FROM social_log ORDER BY date",
+            ).use { result ->
+                result.map { row -> listOf(row[0] as String, row[1] as String, row[2] as String? ?: "") }
+            }
+            listOf(listOf("date", "note", "feeling")) + rows
+        }
+    }
+
+    suspend fun loadAllSymptoms(): List<List<String>> = dbRead(emptyList()) {
+        db.connect().use { conn ->
+            val rows = conn.query(
+                "SELECT date, name, note FROM symptoms_log ORDER BY date",
+            ).use { result ->
+                result.map { row -> listOf(row[0] as String, row[1] as String, row[2] as String) }
+            }
+            listOf(listOf("date", "name", "note")) + rows
         }
     }
 }

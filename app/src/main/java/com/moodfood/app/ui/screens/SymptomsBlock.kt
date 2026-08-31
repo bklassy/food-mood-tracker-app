@@ -1,7 +1,7 @@
 package com.moodfood.app.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,8 +42,7 @@ private data class SymptomEntry(val id: String, val name: String, val note: Stri
  * Persisted to the local Turso/libSQL database, scoped to today's date.
  */
 @Composable
-fun SymptomsBlock() {
-    val today = remember { todayKey() }
+fun SymptomsBlock(today: String) {
     val coroutineScope = rememberCoroutineScope()
     var expanded by rememberSaveable { mutableStateOf(false) }
     var entries by remember { mutableStateOf(listOf<SymptomEntry>()) }
@@ -65,7 +64,7 @@ fun SymptomsBlock() {
             color = CreamText,
             modifier = Modifier
                 .align(Alignment.End)
-                .background(SectionSymptoms, RoundedCornerShape(12.dp))
+                .border(1.dp, SectionSymptoms, RoundedCornerShape(6.dp))
                 .clickable { expanded = !expanded }
                 .padding(horizontal = 14.dp, vertical = 6.dp),
         )

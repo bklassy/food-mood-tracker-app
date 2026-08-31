@@ -12,11 +12,14 @@ import com.moodfood.app.R
 val SacramentoFontFamily = FontFamily(Font(R.font.sacramento))
 
 /**
- * Commissioner (SIL OFL, Google Fonts) - everything else. Loaded as a single
- * Regular weight; Android synthesizes bold for the heavier text styles
- * rather than us wiring up the font's variable weight axis.
+ * Jost (SIL OFL, Google Fonts) - everything else. A geometric, Futura-
+ * inspired sans (circular O's, sharp diagonals) chosen to pair more
+ * cleanly with Sacramento's script than Commissioner's rounder letterforms
+ * did. Loaded as a single Regular weight; Android synthesizes bold for the
+ * heavier text styles rather than us wiring up the font's variable weight
+ * axis.
  */
-val CommissionerFontFamily = FontFamily(Font(R.font.commissioner))
+val JostFontFamily = FontFamily(Font(R.font.jost))
 
 val MoodFoodTypography = Typography(
     headlineLarge = TextStyle(
@@ -24,26 +27,25 @@ val MoodFoodTypography = Typography(
         fontSize = 46.sp,
     ),
     titleLarge = TextStyle(
-        fontFamily = CommissionerFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 20.sp,
+        fontFamily = SacramentoFontFamily,
+        fontSize = 30.sp,
     ),
     titleMedium = TextStyle(
-        fontFamily = CommissionerFontFamily,
-        fontWeight = FontWeight.SemiBold,
+        fontFamily = JostFontFamily,
+        fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
     ),
     bodyLarge = TextStyle(
-        fontFamily = CommissionerFontFamily,
+        fontFamily = JostFontFamily,
         fontSize = 16.sp,
     ),
     bodyMedium = TextStyle(
-        fontFamily = CommissionerFontFamily,
+        fontFamily = JostFontFamily,
         fontSize = 14.sp,
     ),
     labelLarge = TextStyle(
-        fontFamily = CommissionerFontFamily,
-        fontWeight = FontWeight.SemiBold,
+        fontFamily = JostFontFamily,
+        fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
     ),
 )
